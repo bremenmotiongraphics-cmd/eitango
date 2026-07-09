@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>英単語クイズ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: linear-gradient(160deg, #fdf2f8 0%, #ede9fe 50%, #e0f2fe 100%);
+    min-height: 100vh;
+    color: #3b3b4f;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 16px 14px 60px; }
+
+  /* ===== ヘッダー ===== */
+  .app-title {
+    text-align: center; font-size: 22px; font-weight: 800; color: #7c5cbf;
+    padding: 10px 0 2px; letter-spacing: 1px;
+  }
+  .app-sub { text-align: center; font-size: 12px; color: #a89ec9; margin-bottom: 14px; }
+
+  /* ===== カード ===== */
+  .card {
+    background: #fff; border-radius: 18px; padding: 16px;
+    box-shadow: 0 4px 14px rgba(124, 92, 191, .10);
+    margin-bottom: 14px;
+  }
+  .card h2 { font-size: 14px; color: #7c5cbf; margin-bottom: 10px; }
+
+  /* ===== 範囲選択 ===== */
+  .grade-group { margin-bottom: 8px; }
+  .grade-name { font-size: 11px; color: #9c93b8; font-weight: 700; margin: 6px 0 4px; }
+  .range-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .range-chip {
+    border: 2px solid #e4dcf5; border-radius: 999px; padding: 7px 12px;
+    font-size: 13px; background: #faf8ff; color: #6b6285; cursor: pointer;
+    user-select: none; transition: all .15s;
+  }
+  .range-chip.on { background: #7c5cbf; border-color: #7c5cbf; color: #fff; font-weight: 700; }
+  .range-chip .cnt { font-size: 10px; opacity: .75; margin-left: 3px; }
+  .range-chip.locked { opacity: .35; pointer-events: none; }
+
+  /* ===== 方向トグル ===== */
+  .dir-row { display: flex; gap: 8px; }
+  .dir-btn {
+    flex: 1; padding: 10px; border-radius: 12px; border: 2px solid #e4dcf5;
+    background: #faf8ff; font-size: 14px; color: #6b6285; cursor: pointer; font-weight: 700;
+  }
+  .dir-btn.on { background: #f4749b; border-color: #f4749b; color: #fff; }
+
+  /* ===== メインボタン ===== */
+  .main-btns { display: flex; gap: 10px; }
+  .big-btn {
+    flex: 1; padding: 18px 8px; border: none; border-radius: 16px;
+    font-size: 17px; font-weight: 800; color: #fff; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,.12);
+  }
+  .big-btn:active { transform: scale(.97); }
+  .btn-quiz { background: linear-gradient(135deg, #f4749b, #f9a06b); }
+  .btn-book { background: linear-gradient(135deg, #7c5cbf, #5b8def); }
+  .big-btn small { display: block; font-size: 11px; font-weight: 400; opacity: .9; margin-top: 3px; }
+
+  /* ===== 記録 ===== */
+  .rec-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 4px; border-bottom: 1px dashed #eee6fb; font-size: 13px;
+  }
+  .rec-row:last-child { border-bottom: none; }
+  .rec-label { color: #6b6285; font-weight: 700; }
+  .rec-val { color: #f4749b; font-weight: 800; }
+  .rec-val .of { color: #b9b0d4; font-weight: 400; font-size: 11px; }
+  .rec-empty { color: #b9b0d4; font-size: 12px; text-align: center; padding: 8px; }
+
+  /* ===== クイズ画面 ===== */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .streak-box { font-size: 14px; font-weight: 800; color: #7c5cbf; }
+  .streak-box .num { font-size: 26px; color: #f4749b; }
+  .quit-btn {
+    border: none; background: #eee6fb; color: #7c5cbf; border-radius: 999px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .q-card {
+    background: #fff; border-radius: 20px; padding: 30px 16px; text-align: center;
+    box-shadow: 0 4px 14px rgba(124, 92, 191, .12); margin-bottom: 14px;
+    min-height: 130px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .q-word { font-size: 34px; font-weight: 800; color: #3b3b4f; word-break: break-word; }
+  .q-word.jp { font-size: 24px; }
+  .q-reading { font-size: 14px; color: #a89ec9; margin-top: 6px; min-height: 18px; }
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    padding: 15px 14px; border-radius: 14px; border: 2px solid #e4dcf5;
+    background: #fff; font-size: 16px; color: #3b3b4f; cursor: pointer; text-align: left;
+    font-weight: 600; transition: all .12s; word-break: break-word;
+  }
+  .choice-btn:active { transform: scale(.98); }
+  .choice-btn.correct { background: #d1fadf; border-color: #34c77b; color: #1a7d4b; }
+  .choice-btn.wrong { background: #ffe0e5; border-color: #f4749b; color: #d13a63; animation: shake .3s; }
+  .choice-btn.dim { opacity: .45; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .lap-note { text-align: center; font-size: 11px; color: #b9b0d4; margin-top: 10px; }
+
+  /* ===== 結果画面 ===== */
+  .result-card { text-align: center; padding: 30px 16px; }
+  .result-emoji { font-size: 48px; }
+  .result-score { font-size: 40px; font-weight: 800; color: #f4749b; margin: 6px 0; }
+  .result-score small { font-size: 15px; color: #9c93b8; font-weight: 700; }
+  .result-msg { font-size: 14px; color: #6b6285; margin-bottom: 6px; }
+  .result-best { font-size: 13px; color: #7c5cbf; font-weight: 700; margin-bottom: 4px; }
+  .new-record {
+    display: inline-block; background: #fff3c4; color: #b7791f; font-weight: 800;
+    border-radius: 999px; padding: 5px 14px; font-size: 13px; margin: 6px 0;
+  }
+  .miss-box {
+    background: #faf8ff; border-radius: 14px; padding: 12px; margin: 12px 0;
+    font-size: 15px; color: #3b3b4f;
+  }
+  .miss-box .w { font-size: 22px; font-weight: 800; }
+  .miss-box .r { font-size: 12px; color: #a89ec9; }
+  .miss-box .m { font-size: 15px; color: #d13a63; font-weight: 700; margin-top: 4px; }
+
+  /* ===== 単語帳 ===== */
+  .search-box {
+    width: 100%; padding: 12px 14px; border-radius: 14px; border: 2px solid #e4dcf5;
+    font-size: 15px; outline: none; background: #fff; margin-bottom: 10px;
+  }
+  .search-box:focus { border-color: #7c5cbf; }
+  .book-tools { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .toggle-btn {
+    border: 2px solid #e4dcf5; background: #fff; color: #6b6285; border-radius: 999px;
+    padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .toggle-btn.on { background: #7c5cbf; border-color: #7c5cbf; color: #fff; }
+  .book-count { font-size: 12px; color: #9c93b8; margin-left: auto; }
+  .word-row {
+    background: #fff; border-radius: 14px; padding: 12px 14px; margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(124, 92, 191, .07); cursor: pointer;
+  }
+  .word-row .en { font-size: 18px; font-weight: 800; color: #3b3b4f; }
+  .word-row .rd { font-size: 12px; color: #a89ec9; margin-left: 8px; }
+  .word-row .mn { font-size: 14px; color: #7c5cbf; margin-top: 4px; font-weight: 600; }
+  .word-row .mn.hidden { visibility: hidden; }
+  .word-row .tag { font-size: 10px; color: #b9b0d4; float: right; }
+  .load-more { width: 100%; padding: 12px; border: none; border-radius: 14px; background: #eee6fb; color: #7c5cbf; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px; }
+
+  .back-btn {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    border: none; background: #7c5cbf; color: #fff; border-radius: 999px;
+    padding: 12px 30px; font-size: 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(124, 92, 191, .35); z-index: 10;
+  }
+  .warn { color: #d13a63; font-size: 13px; text-align: center; padding: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ ホーム ============ -->
+  <div id="scr-home" class="screen active">
+    <div class="app-title">🌸 英単語クイズ 🌸</div>
+    <div class="app-sub">まちがえるまで何問続く？</div>
+
+    <div class="card">
+      <h2>📚 出題範囲（複数えらべるよ）</h2>
+      <div id="range-area"></div>
+    </div>
+
+    <div class="card">
+      <h2>🔁 出題方向</h2>
+      <div class="dir-row">
+        <button class="dir-btn on" id="dir-e2j" onclick="setDir('e2j')">英語 → 意味</button>
+        <button class="dir-btn" id="dir-j2e" onclick="setDir('j2e')">意味 → 英語</button>
+      </div>
+    </div>
+
+    <div class="main-btns">
+      <button class="big-btn btn-quiz" onclick="startQuiz()">🔥 クイズ<small>エンドレスモード</small></button>
+      <button class="big-btn btn-book" onclick="openBook()">📖 単語帳<small>見る・調べる</small></button>
+    </div>
+    <div id="home-warn" class="warn"></div>
+
+    <div class="card" style="margin-top:14px;">
+      <h2>🏆 これまでの記録</h2>
+      <div id="rec-area"><div class="rec-empty">まだ記録がないよ。クイズに挑戦してみよう!</div></div>
+    </div>
+  </div>
+
+  <!-- ============ クイズ ============ -->
+  <div id="scr-quiz" class="screen">
+    <div class="quiz-top">
+      <div class="streak-box"><span class="num" id="streak-num">0</span> 連続正解</div>
+      <button class="quit-btn" onclick="quitQuiz()">やめる</button>
+    </div>
+    <div class="q-card">
+      <div class="q-word" id="q-word"></div>
+      <div class="q-reading" id="q-reading"></div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="lap-note" id="lap-note"></div>
+  </div>
+
+  <!-- ============ 結果 ============ -->
+  <div id="scr-result" class="screen">
+    <div class="card result-card">
+      <div class="result-emoji" id="result-emoji">😢</div>
+      <div class="result-score"><span id="result-score">0</span><small> 連続正解</small></div>
+      <div class="result-msg" id="result-msg"></div>
+      <div id="result-record"></div>
+      <div class="miss-box" id="miss-box"></div>
+      <div class="main-btns" style="margin-top:14px;">
+        <button class="big-btn btn-quiz" onclick="startQuiz()">もう一回!</button>
+        <button class="big-btn btn-book" onclick="goHome()">ホームへ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 単語帳 ============ -->
+  <div id="scr-book" class="screen">
+    <div class="app-title" style="font-size:18px;">📖 単語帳</div>
+    <input type="text" class="search-box" id="search" placeholder="単語・読み・意味でけんさく 🔍" oninput="renderBook()">
+    <div class="book-tools">
+      <button class="toggle-btn" id="hide-mn" onclick="toggleMeaning()">意味をかくす</button>
+      <span class="book-count" id="book-count"></span>
+    </div>
+    <div id="book-list"></div>
+    <button class="back-btn" onclick="goHome()">← もどる</button>
+    <div style="height:70px;"></div>
+  </div>
+
+</div>
+
+<script>
+// 英単語データ: 小学校の復習
+// 形式: ["単語", "読み(カナ)", "意味"]
+window.WORD_DATA = window.WORD_DATA || [];
+window.WORD_DATA.push({
+  id: "shou",
+  label: "小学校の復習",
+  words: [
+    // --- 数 ---
+    ["one", "ワン", "1"],
+    ["two", "トゥー", "2"],
+    ["three", "スリー", "3"],
+    ["four", "フォー", "4"],
+    ["five", "ファイブ", "5"],
+    ["six", "シックス", "6"],
+    ["seven", "セブン", "7"],
+    ["eight", "エイト", "8"],
+    ["nine", "ナイン", "9"],
+    ["ten", "テン", "10"],
+    ["eleven", "イレブン", "11"],
+    ["twelve", "トゥエルブ", "12"],
+    ["thirteen", "サーティーン", "13"],
+    ["fourteen", "フォーティーン", "14"],
+    ["fifteen", "フィフティーン", "15"],
+    ["sixteen", "シックスティーン", "16"],
+    ["seventeen", "セブンティーン", "17"],
+    ["eighteen", "エイティーン", "18"],
+    ["nineteen", "ナインティーン", "19"],
+    ["twenty", "トゥエンティ", "20"],
+    ["thirty", "サーティ", "30"],
+    ["forty", "フォーティ", "40"],
+    ["fifty", "フィフティ", "50"],
+    ["sixty", "シックスティ", "60"],
+    ["seventy", "セブンティ", "70"],
+    ["eighty", "エイティ", "80"],
+    ["ninety", "ナインティ", "90"],
+    ["hundred", "ハンドレッド", "100"],
+    ["thousand", "サウザンド", "1000"],
+    ["first", "ファースト", "1番目の"],
+    ["second", "セカンド", "2番目の"],
+    ["third", "サード", "3番目の"],
+    // --- 曜日 ---
+    ["Monday", "マンデー", "月曜日"],
+    ["Tuesday", "チューズデー", "火曜日"],
+    ["Wednesday", "ウェンズデー", "水曜日"],
+    ["Thursday", "サーズデー", "木曜日"],
+    ["Friday", "フライデー", "金曜日"],
+    ["Saturday", "サタデー", "土曜日"],
+    ["Sunday", "サンデー", "日曜日"],
+    // --- 月 ---
+    ["January", "ジャニュアリー", "1月"],
+    ["February", "フェブラリー", "2月"],
+    ["March", "マーチ", "3月"],
+    ["April", "エイプリル", "4月"],
+    ["May", "メイ", "5月"],
+    ["June", "ジューン", "6月"],
+    ["July", "ジュライ", "7月"],
+    ["August", "オーガスト", "8月"],
+    ["September", "セプテンバー", "9月"],
+    ["October", "オクトーバー", "10月"],
+    ["November", "ノベンバー", "11月"],
+    ["December", "ディセンバー", "12月"],
+    // --- 季節 ---
+    ["spring", "スプリング", "春"],
+    ["summer", "サマー", "夏"],
+    ["fall", "フォール", "秋"],
+    ["winter", "ウィンター", "冬"],
+    // --- 色 ---
+    ["color", "カラー", "色"],
+    ["red", "レッド", "赤"],
+    ["blue", "ブルー", "青"],
+    ["yellow", "イエロー", "黄色"],
+    ["green", "グリーン", "緑"],
+    ["black", "ブラック", "黒"],
+    ["white", "ホワイト", "白"],
+    ["orange", "オレンジ", "オレンジ色・オレンジ"],
+    ["pink", "ピンク", "ピンク色"],
+    ["purple", "パープル", "紫"],
+    ["brown", "ブラウン", "茶色"],
+    ["gray", "グレイ", "灰色"],
+    ["gold", "ゴールド", "金色"],
+    ["silver", "シルバー", "銀色"],
+    // --- 動物 ---
+    ["animal", "アニマル", "動物"],
+    ["dog", "ドッグ", "犬"],
+    ["cat", "キャット", "ねこ"],
+    ["bird", "バード", "鳥"],
+    ["fish", "フィッシュ", "魚"],
+    ["rabbit", "ラビット", "うさぎ"],
+    ["bear", "ベア", "くま"],
+    ["lion", "ライオン", "ライオン"],
+    ["tiger", "タイガー", "トラ"],
+    ["elephant", "エレファント", "ゾウ"],
+    ["monkey", "モンキー", "サル"],
+    ["mouse", "マウス", "ネズミ"],
+    ["horse", "ホース", "馬"],
+    ["cow", "カウ", "牛"],
+    ["pig", "ピッグ", "ブタ"],
+    ["sheep", "シープ", "羊"],
+    ["chicken", "チキン", "ニワトリ・とり肉"],
+    ["duck", "ダック", "アヒル・カモ"],
+    ["frog", "フロッグ", "カエル"],
+    ["snake", "スネイク", "ヘビ"],
+    ["fox", "フォックス", "キツネ"],
+    ["panda", "パンダ", "パンダ"],
+    ["koala", "コアラ", "コアラ"],
+    ["dolphin", "ドルフィン", "イルカ"],
+    ["whale", "ホエール", "クジラ"],
+    ["shark", "シャーク", "サメ"],
+    ["penguin", "ペンギン", "ペンギン"],
+    ["owl", "アウル", "フクロウ"],
+    ["spider", "スパイダー", "クモ"],
+    ["butterfly", "バタフライ", "チョウ"],
+    ["turtle", "タートル", "カメ"],
+    // --- 食べ物 ---
+    ["food", "フード", "食べ物"],
+    ["fruit", "フルーツ", "果物"],
+    ["vegetable", "ベジタブル", "野菜"],
+    ["apple", "アップル", "りんご"],
+    ["banana", "バナナ", "バナナ"],
+    ["grape", "グレイプ", "ぶどう"],
+    ["peach", "ピーチ", "もも"],
+    ["melon", "メロン", "メロン"],
+    ["watermelon", "ウォーターメロン", "スイカ"],
+    ["strawberry", "ストロベリー", "いちご"],
+    ["cherry", "チェリー", "さくらんぼ"],
+    ["lemon", "レモン", "レモン"],
+    ["pineapple", "パイナップル", "パイナップル"],
+    ["kiwi", "キーウィ", "キウイ"],
+    ["tomato", "トメイトウ", "トマト"],
+    ["potato", "ポテイトウ", "じゃがいも"],
+    ["onion", "アニオン", "たまねぎ"],
+    ["carrot", "キャロット", "にんじん"],
+    ["cucumber", "キューカンバー", "きゅうり"],
+    ["corn", "コーン", "とうもろこし"],
+    ["pumpkin", "パンプキン", "かぼちゃ"],
+    ["cabbage", "キャベッジ", "キャベツ"],
+    ["lettuce", "レタス", "レタス"],
+    ["mushroom", "マッシュルーム", "きのこ"],
+    ["rice", "ライス", "ごはん・米"],
+    ["bread", "ブレッド", "パン"],
+    ["egg", "エッグ", "たまご"],
+    ["milk", "ミルク", "牛乳"],
+    ["water", "ウォーター", "水"],
+    ["juice", "ジュース", "ジュース"],
+    ["tea", "ティー", "お茶・紅茶"],
+    ["coffee", "コーヒー", "コーヒー"],
+    ["soup", "スープ", "スープ"],
+    ["salad", "サラダ", "サラダ"],
+    ["pizza", "ピッツァ", "ピザ"],
+    ["hamburger", "ハンバーガー", "ハンバーガー"],
+    ["sandwich", "サンドウィッチ", "サンドイッチ"],
+    ["spaghetti", "スパゲティ", "スパゲッティ"],
+    ["curry", "カリー", "カレー"],
+    ["sushi", "スシ", "すし"],
+    ["steak", "ステイク", "ステーキ"],
+    ["cake", "ケイク", "ケーキ"],
+    ["ice cream", "アイスクリーム", "アイスクリーム"],
+    ["chocolate", "チョコレット", "チョコレート"],
+    ["candy", "キャンディ", "あめ・キャンディ"],
+    ["cookie", "クッキー", "クッキー"],
+    ["donut", "ドーナツ", "ドーナツ"],
+    ["jam", "ジャム", "ジャム"],
+    ["cheese", "チーズ", "チーズ"],
+    ["butter", "バター", "バター"],
+    ["meat", "ミート", "肉"],
+    ["breakfast", "ブレックファスト", "朝食"],
+    ["lunch", "ランチ", "昼食"],
+    ["dinner", "ディナー", "夕食"],
+    // --- 学校 ---
+    ["school", "スクール", "学校"],
+    ["classroom", "クラスルーム", "教室"],
+    ["teacher", "ティーチャー", "先生"],
+    ["student", "ステューデント", "生徒・学生"],
+    ["desk", "デスク", "机"],
+    ["chair", "チェア", "いす"],
+    ["pencil", "ペンシル", "えんぴつ"],
+    ["pen", "ペン", "ペン"],
+    ["eraser", "イレイサー", "消しゴム"],
+    ["notebook", "ノートブック", "ノート"],
+    ["book", "ブック", "本"],
+    ["bag", "バッグ", "かばん"],
+    ["ruler", "ルーラー", "定規"],
+    ["scissors", "シザーズ", "はさみ"],
+    ["glue", "グルー", "のり"],
+    ["blackboard", "ブラックボード", "黒板"],
+    ["homework", "ホームワーク", "宿題"],
+    ["test", "テスト", "テスト・試験"],
+    ["class", "クラス", "授業・クラス"],
+    ["subject", "サブジェクト", "教科"],
+    ["English", "イングリッシュ", "英語"],
+    ["Japanese", "ジャパニーズ", "国語・日本語・日本人の"],
+    ["math", "マス", "数学・算数"],
+    ["science", "サイエンス", "理科・科学"],
+    ["music", "ミュージック", "音楽"],
+    ["art", "アート", "美術・図工"],
+    ["library", "ライブラリー", "図書館・図書室"],
+    ["gym", "ジム", "体育館"],
+    ["playground", "プレイグラウンド", "運動場・遊び場"],
+    ["pool", "プール", "プール"],
+    ["club", "クラブ", "クラブ・部活"],
+    // --- 家族・人 ---
+    ["family", "ファミリー", "家族"],
+    ["father", "ファーザー", "父"],
+    ["mother", "マザー", "母"],
+    ["brother", "ブラザー", "兄・弟"],
+    ["sister", "シスター", "姉・妹"],
+    ["grandfather", "グランドファーザー", "祖父・おじいさん"],
+    ["grandmother", "グランドマザー", "祖母・おばあさん"],
+    ["uncle", "アンクル", "おじ"],
+    ["aunt", "アント", "おば"],
+    ["cousin", "カズン", "いとこ"],
+    ["baby", "ベイビー", "赤ちゃん"],
+    ["boy", "ボーイ", "男の子"],
+    ["girl", "ガール", "女の子"],
+    ["man", "マン", "男の人"],
+    ["woman", "ウーマン", "女の人"],
+    ["friend", "フレンド", "友達"],
+    ["people", "ピープル", "人々"],
+    ["child", "チャイルド", "子ども"],
+    ["name", "ネイム", "名前"],
+    ["birthday", "バースデー", "誕生日"],
+    // --- 体 ---
+    ["head", "ヘッド", "頭"],
+    ["face", "フェイス", "顔"],
+    ["eye", "アイ", "目"],
+    ["ear", "イヤー", "耳"],
+    ["nose", "ノウズ", "鼻"],
+    ["mouth", "マウス", "口"],
+    ["tooth", "トゥース", "歯"],
+    ["hair", "ヘア", "髪"],
+    ["hand", "ハンド", "手"],
+    ["finger", "フィンガー", "指"],
+    ["arm", "アーム", "腕"],
+    ["leg", "レッグ", "脚"],
+    ["foot", "フット", "足"],
+    ["knee", "ニー", "ひざ"],
+    ["shoulder", "ショルダー", "肩"],
+    // --- スポーツ・遊び ---
+    ["sport", "スポーツ", "スポーツ"],
+    ["baseball", "ベースボール", "野球"],
+    ["soccer", "サッカー", "サッカー"],
+    ["basketball", "バスケットボール", "バスケットボール"],
+    ["tennis", "テニス", "テニス"],
+    ["volleyball", "バレーボール", "バレーボール"],
+    ["badminton", "バドミントン", "バドミントン"],
+    ["table tennis", "テーブルテニス", "卓球"],
+    ["swimming", "スイミング", "水泳"],
+    ["skiing", "スキーイング", "スキー"],
+    ["skating", "スケイティング", "スケート"],
+    ["dodgeball", "ドッジボール", "ドッジボール"],
+    ["rugby", "ラグビー", "ラグビー"],
+    ["golf", "ゴルフ", "ゴルフ"],
+    ["dance", "ダンス", "ダンス・踊る"],
+    ["game", "ゲイム", "ゲーム・試合"],
+    // --- 自然・天気 ---
+    ["sun", "サン", "太陽"],
+    ["moon", "ムーン", "月"],
+    ["star", "スター", "星"],
+    ["sky", "スカイ", "空"],
+    ["sea", "シー", "海"],
+    ["mountain", "マウンテン", "山"],
+    ["river", "リバー", "川"],
+    ["lake", "レイク", "湖"],
+    ["tree", "トゥリー", "木"],
+    ["flower", "フラワー", "花"],
+    ["forest", "フォレスト", "森"],
+    ["beach", "ビーチ", "浜辺・ビーチ"],
+    ["island", "アイランド", "島"],
+    ["rain", "レイン", "雨"],
+    ["snow", "スノウ", "雪"],
+    ["wind", "ウィンド", "風"],
+    ["cloud", "クラウド", "雲"],
+    ["sunny", "サニー", "晴れた"],
+    ["rainy", "レイニー", "雨の"],
+    ["cloudy", "クラウディ", "くもりの"],
+    ["snowy", "スノウイ", "雪の"],
+    ["hot", "ホット", "暑い・熱い"],
+    ["cold", "コールド", "寒い・冷たい"],
+    ["warm", "ウォーム", "あたたかい"],
+    ["cool", "クール", "すずしい・かっこいい"],
+    ["weather", "ウェザー", "天気"],
+    // --- 家・町・場所 ---
+    ["house", "ハウス", "家"],
+    ["home", "ホーム", "家・家庭"],
+    ["room", "ルーム", "部屋"],
+    ["kitchen", "キッチン", "台所"],
+    ["bathroom", "バスルーム", "風呂場・トイレ"],
+    ["bed", "ベッド", "ベッド"],
+    ["table", "テーブル", "テーブル"],
+    ["door", "ドア", "ドア"],
+    ["window", "ウィンドウ", "窓"],
+    ["garden", "ガーデン", "庭"],
+    ["park", "パーク", "公園"],
+    ["zoo", "ズー", "動物園"],
+    ["aquarium", "アクエリアム", "水族館"],
+    ["museum", "ミュージアム", "博物館・美術館"],
+    ["station", "ステイション", "駅"],
+    ["hospital", "ホスピタル", "病院"],
+    ["police station", "ポリスステイション", "警察署"],
+    ["fire station", "ファイヤーステイション", "消防署"],
+    ["post office", "ポストオフィス", "郵便局"],
+    ["restaurant", "レストラン", "レストラン"],
+    ["store", "ストア", "店"],
+    ["supermarket", "スーパーマーケット", "スーパー"],
+    ["convenience store", "コンビニエンスストア", "コンビニ"],
+    ["department store", "デパートメントストア", "デパート"],
+    ["bookstore", "ブックストア", "本屋"],
+    ["city", "シティ", "都市・市"],
+    ["town", "タウン", "町"],
+    ["village", "ビレッジ", "村"],
+    ["country", "カントリー", "国・いなか"],
+    ["street", "ストリート", "通り"],
+    ["bridge", "ブリッジ", "橋"],
+    ["building", "ビルディング", "建物"],
+    ["castle", "キャッスル", "城"],
+    ["temple", "テンプル", "寺"],
+    ["shrine", "シュライン", "神社"],
+    ["amusement park", "アミューズメントパーク", "遊園地"],
+    ["stadium", "ステイディアム", "スタジアム・競技場"],
+    ["farm", "ファーム", "農場"],
+    ["airport", "エアポート", "空港"],
+    // --- 乗り物 ---
+    ["car", "カー", "車"],
+    ["bus", "バス", "バス"],
+    ["train", "トレイン", "電車"],
+    ["bike", "バイク", "自転車"],
+    ["taxi", "タクシー", "タクシー"],
+    ["ship", "シップ", "船"],
+    ["boat", "ボウト", "ボート・小舟"],
+    ["plane", "プレイン", "飛行機"],
+    ["truck", "トラック", "トラック"],
+    ["ambulance", "アンビュランス", "救急車"],
+    // --- 職業 ---
+    ["doctor", "ドクター", "医者"],
+    ["nurse", "ナース", "看護師"],
+    ["police officer", "ポリスオフィサー", "警察官"],
+    ["firefighter", "ファイヤーファイター", "消防士"],
+    ["singer", "シンガー", "歌手"],
+    ["dancer", "ダンサー", "ダンサー"],
+    ["pilot", "パイロット", "パイロット"],
+    ["cook", "クック", "料理人・料理する"],
+    ["farmer", "ファーマー", "農家の人"],
+    ["scientist", "サイエンティスト", "科学者"],
+    ["artist", "アーティスト", "芸術家"],
+    ["astronaut", "アストロノート", "宇宙飛行士"],
+    ["vet", "ベット", "獣医"],
+    ["baker", "ベイカー", "パン屋さん"],
+    ["driver", "ドライバー", "運転手"],
+    ["soccer player", "サッカープレイヤー", "サッカー選手"],
+    ["programmer", "プログラマー", "プログラマー"],
+    ["zookeeper", "ズーキーパー", "飼育員"],
+    // --- 動詞 ---
+    ["play", "プレイ", "（スポーツを）する・遊ぶ・演奏する"],
+    ["eat", "イート", "食べる"],
+    ["drink", "ドリンク", "飲む"],
+    ["go", "ゴウ", "行く"],
+    ["come", "カム", "来る"],
+    ["see", "シー", "見る・見える・会う"],
+    ["look", "ルック", "見る・～に見える"],
+    ["watch", "ウォッチ", "（じっと）見る・腕時計"],
+    ["listen", "リスン", "聞く"],
+    ["speak", "スピーク", "話す"],
+    ["talk", "トーク", "話す・しゃべる"],
+    ["say", "セイ", "言う"],
+    ["read", "リード", "読む"],
+    ["write", "ライト", "書く"],
+    ["draw", "ドロー", "（絵を）描く"],
+    ["run", "ラン", "走る"],
+    ["walk", "ウォーク", "歩く"],
+    ["jump", "ジャンプ", "跳ぶ"],
+    ["swim", "スイム", "泳ぐ"],
+    ["sing", "シング", "歌う"],
+    ["make", "メイク", "作る"],
+    ["have", "ハブ", "持っている・食べる"],
+    ["get", "ゲット", "手に入れる・得る"],
+    ["take", "テイク", "取る・（写真を）撮る・連れて行く"],
+    ["give", "ギブ", "与える・あげる"],
+    ["put", "プット", "置く"],
+    ["buy", "バイ", "買う"],
+    ["want", "ウォント", "ほしい・～したい"],
+    ["like", "ライク", "好き・～のような"],
+    ["love", "ラブ", "大好き・愛する"],
+    ["enjoy", "エンジョイ", "楽しむ"],
+    ["study", "スタディ", "勉強する"],
+    ["learn", "ラーン", "学ぶ・覚える"],
+    ["help", "ヘルプ", "助ける・手伝う"],
+    ["clean", "クリーン", "そうじする・きれいな"],
+    ["wash", "ウォッシュ", "洗う"],
+    ["open", "オープン", "開ける"],
+    ["close", "クロウズ", "閉める"],
+    ["start", "スタート", "始める・始まる"],
+    ["stop", "ストップ", "止める・止まる"],
+    ["stand", "スタンド", "立つ"],
+    ["sit", "シット", "座る"],
+    ["sleep", "スリープ", "眠る"],
+    ["live", "リブ", "住む・生きる"],
+    ["visit", "ビジット", "訪れる・訪問する"],
+    ["meet", "ミート", "会う"],
+    ["join", "ジョイン", "参加する"],
+    ["turn", "ターン", "曲がる・回す"],
+    ["use", "ユーズ", "使う"],
+    ["try", "トライ", "やってみる・努力する"],
+    ["practice", "プラクティス", "練習する・練習"],
+    ["win", "ウィン", "勝つ"],
+    ["ride", "ライド", "乗る"],
+    ["fly", "フライ", "飛ぶ"],
+    ["climb", "クライム", "登る"],
+    ["catch", "キャッチ", "つかまえる"],
+    ["throw", "スロウ", "投げる"],
+    ["do", "ドゥー", "する"],
+    ["know", "ノウ", "知っている"],
+    ["think", "シンク", "思う・考える"],
+    ["feel", "フィール", "感じる"],
+    // --- 形容詞 ---
+    ["big", "ビッグ", "大きい"],
+    ["small", "スモール", "小さい"],
+    ["long", "ロング", "長い"],
+    ["short", "ショート", "短い・背が低い"],
+    ["tall", "トール", "背が高い"],
+    ["high", "ハイ", "高い"],
+    ["low", "ロウ", "低い"],
+    ["new", "ニュー", "新しい"],
+    ["old", "オールド", "古い・年をとった"],
+    ["young", "ヤング", "若い"],
+    ["good", "グッド", "よい・上手な"],
+    ["bad", "バッド", "悪い"],
+    ["nice", "ナイス", "すてきな・親切な"],
+    ["great", "グレイト", "すばらしい・偉大な"],
+    ["wonderful", "ワンダフル", "すばらしい"],
+    ["beautiful", "ビューティフル", "美しい"],
+    ["cute", "キュート", "かわいい"],
+    ["kind", "カインド", "親切な・種類"],
+    ["funny", "ファニー", "おもしろい・おかしい"],
+    ["happy", "ハッピー", "うれしい・幸せな"],
+    ["sad", "サッド", "悲しい"],
+    ["angry", "アングリー", "怒った"],
+    ["hungry", "ハングリー", "おなかがすいた"],
+    ["sleepy", "スリーピー", "眠い"],
+    ["tired", "タイヤード", "疲れた"],
+    ["fine", "ファイン", "元気な・すばらしい"],
+    ["busy", "ビジー", "忙しい"],
+    ["fast", "ファスト", "速い"],
+    ["slow", "スロウ", "遅い"],
+    ["early", "アーリー", "早い・早く"],
+    ["late", "レイト", "遅れた・遅く"],
+    ["easy", "イージー", "簡単な"],
+    ["difficult", "ディフィカルト", "難しい"],
+    ["soft", "ソフト", "やわらかい"],
+    ["strong", "ストロング", "強い"],
+    ["brave", "ブレイブ", "勇敢な"],
+    ["famous", "フェイマス", "有名な"],
+    ["popular", "ポピュラー", "人気のある"],
+    ["favorite", "フェイバリット", "お気に入りの"],
+    ["delicious", "デリシャス", "とてもおいしい"],
+    ["sweet", "スウィート", "あまい"],
+    ["bitter", "ビター", "にがい"],
+    ["sour", "サワー", "すっぱい"],
+    ["salty", "ソルティ", "しょっぱい"],
+    ["spicy", "スパイシー", "からい"],
+    ["exciting", "エキサイティング", "わくわくする"],
+    ["interesting", "インタレスティング", "おもしろい・興味深い"],
+    ["fun", "ファン", "楽しいこと"],
+    ["important", "インポータント", "大切な・重要な"],
+    ["special", "スペシャル", "特別な"],
+    // --- あいさつ・時・その他 ---
+    ["hello", "ハロー", "こんにちは"],
+    ["hi", "ハイ", "やあ"],
+    ["goodbye", "グッバイ", "さようなら"],
+    ["morning", "モーニング", "朝"],
+    ["afternoon", "アフタヌーン", "午後"],
+    ["evening", "イブニング", "夕方"],
+    ["night", "ナイト", "夜"],
+    ["today", "トゥデイ", "今日"],
+    ["tomorrow", "トゥモロー", "明日"],
+    ["yesterday", "イエスタデイ", "昨日"],
+    ["now", "ナウ", "今"],
+    ["time", "タイム", "時間"],
+    ["year", "イヤー", "年"],
+    ["week", "ウィーク", "週"],
+    ["day", "デイ", "日"],
+    ["present", "プレゼント", "プレゼント・贈り物"],
+    ["party", "パーティ", "パーティー"],
+    ["Christmas", "クリスマス", "クリスマス"],
+    ["vacation", "バケイション", "休暇・休み"],
+    ["trip", "トリップ", "旅行"],
+    ["picture", "ピクチャー", "絵・写真"],
+    ["movie", "ムービー", "映画"],
+    ["song", "ソング", "歌"],
+    ["TV", "ティービー", "テレビ"],
+    ["computer", "コンピューター", "コンピューター"],
+    ["money", "マニー", "お金"],
+    ["number", "ナンバー", "数・番号"],
+    ["question", "クエスチョン", "質問"],
+    ["answer", "アンサー", "答え・答える"],
+    ["dream", "ドリーム", "夢"],
+    ["job", "ジョブ", "仕事"],
+    ["world", "ワールド", "世界"],
+    ["Japan", "ジャパン", "日本"],
+    ["America", "アメリカ", "アメリカ"],
+    ["Australia", "オーストレイリア", "オーストラリア"],
+    ["China", "チャイナ", "中国"],
+    ["Korea", "コリア", "韓国"],
+    ["France", "フランス", "フランス"],
+    ["left", "レフト", "左"],
+    ["right", "ライト", "右・正しい"],
+    ["up", "アップ", "上へ"],
+    ["down", "ダウン", "下へ"],
+    ["here", "ヒア", "ここ"],
+    ["there", "ゼア", "そこ・あそこ"],
+    ["yes", "イエス", "はい"],
+    ["no", "ノウ", "いいえ"],
+    // --- 動物(追加) ---
+    ["giraffe", "ジラフ", "キリン"],
+    ["zebra", "ジーブラ", "シマウマ"],
+    ["gorilla", "ゴリラ", "ゴリラ"],
+    ["wolf", "ウルフ", "オオカミ"],
+    ["deer", "ディア", "シカ"],
+    ["bee", "ビー", "ハチ"],
+    ["beetle", "ビートル", "カブトムシ"],
+    ["dragonfly", "ドラゴンフライ", "トンボ"],
+    ["ant", "アント", "アリ"],
+    ["jellyfish", "ジェリーフィッシュ", "クラゲ"],
+    ["crab", "クラブ", "カニ"],
+    ["octopus", "オクトパス", "タコ"],
+    ["squid", "スクウィッド", "イカ"],
+    ["shrimp", "シュリンプ", "エビ"],
+    ["insect", "インセクト", "昆虫"],
+    // --- 食べ物(追加) ---
+    ["pie", "パイ", "パイ"],
+    ["pudding", "プディング", "プリン"],
+    ["yogurt", "ヨウガート", "ヨーグルト"],
+    ["honey", "ハニー", "はちみつ"],
+    ["sugar", "シュガー", "砂糖"],
+    ["salt", "ソルト", "塩"],
+    ["pepper", "ペッパー", "こしょう"],
+    ["sauce", "ソース", "ソース"],
+    ["noodle", "ヌードル", "めん"],
+    ["bean", "ビーン", "豆"],
+    ["nut", "ナット", "木の実・ナッツ"],
+    ["peanut", "ピーナット", "ピーナッツ"],
+    ["soda", "ソウダ", "ソーダ・炭酸飲料"],
+    ["green tea", "グリーンティー", "緑茶"],
+    ["rice ball", "ライスボール", "おにぎり"],
+    ["fried chicken", "フライドチキン", "からあげ・フライドチキン"],
+    ["french fries", "フレンチフライズ", "フライドポテト"],
+    ["shaved ice", "シェイブドアイス", "かき氷"],
+    ["parfait", "パーフェイ", "パフェ"],
+    ["pork", "ポーク", "ぶた肉"],
+    ["beef", "ビーフ", "牛肉"],
+    ["ham", "ハム", "ハム"],
+    ["sausage", "ソーセージ", "ソーセージ"],
+    // --- 文房具(追加) ---
+    ["pencil case", "ペンシルケイス", "筆箱"],
+    ["stapler", "ステイプラー", "ホッチキス"],
+    ["tape", "テイプ", "テープ"],
+    ["paper", "ペイパー", "紙"],
+    ["crayon", "クレヨン", "クレヨン"],
+    ["marker", "マーカー", "マーカー・サインペン"],
+    // --- 教科(追加) ---
+    ["social studies", "ソウシャルスタディーズ", "社会科"],
+    ["P.E.", "ピーイー", "体育"],
+    ["calligraphy", "カリグラフィー", "書写・書道"],
+    ["home economics", "ホームエコノミクス", "家庭科"],
+    ["moral education", "モラルエデュケイション", "道徳"],
+    ["arts and crafts", "アーツアンドクラフツ", "図画工作"],
+    // --- 学校(追加) ---
+    ["principal", "プリンシパル", "校長先生"],
+    ["hallway", "ホールウェイ", "ろうか"],
+    ["entrance", "エントランス", "入り口・玄関"],
+    ["school lunch", "スクールランチ", "給食"],
+    ["recess", "リセス", "休み時間"],
+    // --- 行事・遊び(追加) ---
+    ["Halloween", "ハロウィーン", "ハロウィン"],
+    ["Valentine's Day", "バレンタインズデイ", "バレンタインデー"],
+    ["Star Festival", "スターフェスティバル", "七夕"],
+    ["Children's Day", "チルドレンズデイ", "こどもの日"],
+    ["Dolls' Festival", "ドールズフェスティバル", "ひな祭り"],
+    ["field trip", "フィールドトリップ", "遠足"],
+    ["camping", "キャンピング", "キャンプ"],
+    ["hiking", "ハイキング", "ハイキング"],
+    ["picnic", "ピクニック", "ピクニック"],
+    ["fishing", "フィッシング", "つり"],
+    ["shopping", "ショッピング", "買い物"],
+    // --- 身の回り(追加) ---
+    ["sofa", "ソウファ", "ソファー"],
+    ["curtain", "カーテン", "カーテン"],
+    ["carpet", "カーペット", "じゅうたん"],
+    ["lamp", "ランプ", "ランプ・電気スタンド"],
+    ["blanket", "ブランケット", "毛布"],
+    ["pillow", "ピロウ", "まくら"],
+    ["toothbrush", "トゥースブラッシュ", "歯ブラシ"],
+    ["tissue", "ティッシュー", "ティッシュ"],
+    ["garbage", "ガービッジ", "ごみ"],
+    ["wallet", "ウォレット", "さいふ"],
+    ["handkerchief", "ハンカチーフ", "ハンカチ"],
+    ["glasses", "グラシズ", "メガネ"],
+    ["necklace", "ネックレス", "ネックレス"],
+    ["ribbon", "リボン", "リボン"],
+    // --- 乗り物(追加) ---
+    ["subway", "サブウェイ", "地下鉄"],
+    ["ferry", "フェリー", "フェリー"],
+    ["rocket", "ロケット", "ロケット"],
+    ["helicopter", "ヘリコプター", "ヘリコプター"],
+    ["fire engine", "ファイヤーエンジン", "消防車"],
+    ["police car", "ポリスカー", "パトカー"],
+    // --- 場所(追加) ---
+    ["bakery", "ベイカリー", "パン屋"],
+    ["flower shop", "フラワーショップ", "花屋"],
+    ["pet shop", "ペットショップ", "ペットショップ"],
+    ["movie theater", "ムービーシアター", "映画館"],
+    ["church", "チャーチ", "教会"],
+    ["bank", "バンク", "銀行"],
+    ["hotel", "ホテル", "ホテル"],
+    ["tower", "タワー", "タワー・塔"],
+    ["factory", "ファクトリー", "工場"],
+    // --- 自然(追加) ---
+    ["rainbow", "レインボウ", "虹"],
+    ["storm", "ストーム", "あらし"],
+    ["typhoon", "タイフーン", "台風"],
+    ["desert", "デザート", "砂漠"],
+    ["jungle", "ジャングル", "ジャングル"],
+    ["space", "スペイス", "宇宙"],
+    ["earth", "アース", "地球"],
+    ["planet", "プラネット", "惑星"],
+    ["rock", "ロック", "岩"],
+    ["sand", "サンド", "砂"],
+    ["wave", "ウェイブ", "波"],
+    ["hole", "ホウル", "穴"],
+    // --- 職業(追加) ---
+    ["comedian", "コメディアン", "お笑い芸人"],
+    ["dentist", "デンティスト", "歯医者"],
+    ["florist", "フローリスト", "花屋さん（人）"],
+    ["carpenter", "カーペンター", "大工"],
+    ["chef", "シェフ", "シェフ・料理長"],
+    ["waiter", "ウェイター", "ウェイター"],
+    // --- 動詞(追加) ---
+    ["cut", "カット", "切る"],
+    ["count", "カウント", "数える"],
+    ["spell", "スペル", "つづる"],
+    ["push", "プッシュ", "押す"],
+    ["pull", "プル", "引く"],
+    ["kick", "キック", "ける"],
+    ["hit", "ヒット", "打つ・たたく"],
+    ["slide", "スライド", "すべる・すべり台"],
+    ["dive", "ダイブ", "もぐる・飛びこむ"],
+    ["camp", "キャンプ", "キャンプする"],
+    ["hike", "ハイク", "ハイキングする"],
+    ["brush", "ブラッシュ", "（歯を）みがく・ブラシ"],
+    ["skip", "スキップ", "スキップする"],
+    ["point", "ポイント", "指さす・要点"],
+    // --- 形容詞(追加) ---
+    ["hard", "ハード", "かたい・難しい・熱心に"],
+    ["pretty", "プリティ", "かわいい・きれいな"],
+    ["round", "ラウンド", "丸い"],
+    ["colorful", "カラフル", "カラフルな"],
+    ["wild", "ワイルド", "野生の"],
+    ["scary", "スケアリー", "こわい"],
+    ["lovely", "ラブリー", "すてきな・かわいらしい"],
+    ["windy", "ウィンディ", "風の強い"],
+    // --- 序数・時(追加) ---
+    ["fourth", "フォース", "4番目の"],
+    ["fifth", "フィフス", "5番目の"],
+    ["sixth", "シックスス", "6番目の"],
+    ["seventh", "セブンス", "7番目の"],
+    ["eighth", "エイトス", "8番目の"],
+    ["ninth", "ナインス", "9番目の"],
+    ["tenth", "テンス", "10番目の"],
+    ["eleventh", "イレブンス", "11番目の"],
+    ["twelfth", "トゥエルフス", "12番目の"],
+    ["season", "シーズン", "季節"],
+    ["date", "デイト", "日付"],
+    ["midnight", "ミッドナイト", "真夜中"],
+    // --- 国(追加) ---
+    ["Italy", "イタリー", "イタリア"],
+    ["Germany", "ジャーマニー", "ドイツ"],
+    ["Spain", "スペイン", "スペイン"],
+    ["Brazil", "ブラジル", "ブラジル"],
+    ["Egypt", "イージプト", "エジプト"],
+    ["Russia", "ラシア", "ロシア"],
+    ["Thailand", "タイランド", "タイ"],
+    ["Vietnam", "ビエトナム", "ベトナム"],
+    ["Mexico", "メキシコウ", "メキシコ"],
+    ["the U.K.", "ザユーケイ", "イギリス"],
+    ["the U.S.", "ザユーエス", "アメリカ合衆国"],
+    // --- 体(追加) ---
+    ["body", "ボディ", "体"],
+    ["neck", "ネック", "首"],
+    ["stomach", "スタマック", "おなか・胃"],
+    ["elbow", "エルボウ", "ひじ"],
+    ["toe", "トウ", "足の指・つま先"],
+    // --- スポーツ(追加) ---
+    ["softball", "ソフトボール", "ソフトボール"],
+    ["judo", "ジュードウ", "柔道"],
+    ["kendo", "ケンドウ", "剣道"],
+    ["sumo", "スモウ", "すもう"],
+    ["marathon", "マラソン", "マラソン"],
+    ["surfing", "サーフィング", "サーフィン"],
+    ["cycling", "サイクリング", "サイクリング"]
+  ]
+});
+
+// 英単語データ: あいさつ・会話フレーズ
+// 形式: ["フレーズ", "読み(カナ)", "意味"]
+window.WORD_DATA = window.WORD_DATA || [];
+window.WORD_DATA.push({
+  id: "phrase",
+  label: "あいさつ・会話フレーズ",
+  words: [
+    // --- 出会い・あいさつ ---
+    ["Nice to meet you.", "ナイストゥーミーチュー", "はじめまして"],
+    ["Nice to meet you, too.", "ナイストゥーミーチュートゥー", "こちらこそはじめまして"],
+    ["Good morning.", "グッドモーニング", "おはよう"],
+    ["Good afternoon.", "グッドアフタヌーン", "こんにちは"],
+    ["Good evening.", "グッドイブニング", "こんばんは"],
+    ["Good night.", "グッドナイト", "おやすみなさい"],
+    ["How are you?", "ハウアーユー", "元気ですか？"],
+    ["I'm fine, thank you.", "アイムファインサンキュー", "元気です、ありがとう"],
+    ["Not bad.", "ノットバッド", "悪くないよ"],
+    ["How's it going?", "ハウズイットゴーイング", "調子はどう？"],
+    ["Long time no see.", "ロングタイムノーシー", "ひさしぶり"],
+    ["What's up?", "ワッツアップ", "どうしたの？・元気？"],
+    // --- お礼・おわび ---
+    ["Thank you.", "サンキュー", "ありがとう"],
+    ["Thank you very much.", "サンキューベリーマッチ", "本当にありがとう"],
+    ["Thanks a lot.", "サンクスアロット", "どうもありがとう"],
+    ["You're welcome.", "ユアウェルカム", "どういたしまして"],
+    ["No problem.", "ノープロブレム", "問題ないよ・いいよ"],
+    ["I'm sorry.", "アイムソーリー", "ごめんなさい"],
+    ["That's OK.", "ザッツオウケイ", "大丈夫だよ・気にしないで"],
+    ["Excuse me.", "イクスキューズミー", "すみません（話しかける時）"],
+    // --- 別れ ---
+    ["See you.", "シーユー", "またね"],
+    ["See you later.", "シーユーレイター", "またあとでね"],
+    ["See you tomorrow.", "シーユートゥモロー", "また明日"],
+    ["Take care.", "テイクケア", "気をつけてね・お大事に"],
+    ["Have a nice day.", "ハブアナイスデイ", "よい一日を"],
+    ["Have fun.", "ハブファン", "楽しんできてね"],
+    // --- はげまし・お祝い ---
+    ["Good luck.", "グッドラック", "がんばって・幸運を"],
+    ["Good job.", "グッドジョブ", "よくやったね"],
+    ["Well done.", "ウェルダン", "よくできました"],
+    ["Cheer up.", "チアアップ", "元気出して"],
+    ["Don't worry.", "ドントウォーリー", "心配しないで"],
+    ["Take it easy.", "テイクイットイージー", "気楽にね"],
+    ["Calm down.", "カームダウン", "落ち着いて"],
+    ["Happy birthday.", "ハッピーバースデー", "誕生日おめでとう"],
+    ["Happy New Year.", "ハッピーニューイヤー", "あけましておめでとう"],
+    ["Merry Christmas.", "メリークリスマス", "メリークリスマス"],
+    ["Congratulations.", "コングラチュレイションズ", "おめでとう"],
+    // --- あいづち・返事 ---
+    ["Really?", "リアリー", "本当に？"],
+    ["I see.", "アイシー", "なるほど"],
+    ["I got it.", "アイガットイット", "わかった"],
+    ["Me, too.", "ミートゥー", "私も"],
+    ["That's right.", "ザッツライト", "その通り"],
+    ["That's too bad.", "ザッツトゥーバッド", "それは残念だね"],
+    ["Sounds good.", "サウンズグッド", "いいね"],
+    ["Good idea.", "グッドアイディア", "いい考えだね"],
+    ["No way.", "ノーウェイ", "まさか・ありえない"],
+    ["Are you kidding?", "アーユーキディング", "冗談でしょ？"],
+    ["I don't know.", "アイドントノウ", "わからない・知らない"],
+    ["Let me see.", "レットミーシー", "ええと・そうですね"],
+    ["Pardon?", "パードゥン", "もう一度言ってください"],
+    // --- たずねる・お願い ---
+    ["What's wrong?", "ワッツロング", "どうしたの？（心配して）"],
+    ["What happened?", "ワットハプンド", "何があったの？"],
+    ["What time is it?", "ワットタイムイズイット", "何時ですか？"],
+    ["Can you help me?", "キャンユーヘルプミー", "手伝ってくれる？"],
+    ["Just a minute.", "ジャスタミニット", "ちょっと待って"],
+    ["Here you are.", "ヒアユーアー", "はい、どうぞ（物を渡す時）"],
+    ["After you.", "アフターユー", "お先にどうぞ"],
+    ["Help yourself.", "ヘルプユアセルフ", "ご自由に食べて（飲んで）ね"],
+    // --- 買い物・食事 ---
+    ["May I help you?", "メイアイヘルプユー", "いらっしゃいませ・何かお探しですか"],
+    ["How much is it?", "ハウマッチイズイット", "いくらですか？"],
+    ["I'll take it.", "アイルテイクイット", "それをください（買います）"],
+    // --- 家で ---
+    ["I'm home.", "アイムホーム", "ただいま"],
+    ["Welcome back.", "ウェルカムバック", "おかえりなさい"],
+    ["I'm coming.", "アイムカミング", "今行くよ"],
+    // --- 教室で ---
+    ["Stand up.", "スタンドアップ", "起立"],
+    ["Sit down.", "シットダウン", "着席・座って"],
+    ["Raise your hand.", "レイズユアハンド", "手をあげて"],
+    ["Repeat after me.", "リピートアフターミー", "あとについて言って"],
+    ["Open your textbook.", "オープンユアテキストブック", "教科書を開いて"],
+    ["Listen to me.", "リスントゥーミー", "よく聞いて"],
+    ["Any questions?", "エニークエスチョンズ", "質問はありますか？"],
+    ["I have a question.", "アイハブアクエスチョン", "質問があります"],
+    ["May I come in?", "メイアイカムイン", "入ってもいいですか？"],
+    ["Let's begin.", "レッツビギン", "始めましょう"]
+  ]
+});
+
+// 英単語データ: 中学1年（1学期・2学期・3学期）
+// 形式: ["単語", "読み(カナ)", "意味"]
+window.WORD_DATA = window.WORD_DATA || [];
+
+// ================= 中1・1学期 =================
+window.WORD_DATA.push({
+  id: "c1_1",
+  label: "中1・1学期",
+  words: [
+    // --- 代名詞・be動詞・文法 ---
+    ["I", "アイ", "私は"],
+    ["you", "ユー", "あなたは・あなたを"],
+    ["he", "ヒー", "彼は"],
+    ["she", "シー", "彼女は"],
+    ["it", "イット", "それは・それを"],
+    ["we", "ウィー", "私たちは"],
+    ["they", "ゼイ", "彼らは・それらは"],
+    ["my", "マイ", "私の"],
+    ["your", "ユア", "あなたの"],
+    ["his", "ヒズ", "彼の"],
+    ["her", "ハー", "彼女の・彼女を"],
+    ["its", "イッツ", "それの"],
+    ["our", "アワー", "私たちの"],
+    ["their", "ゼア", "彼らの"],
+    ["me", "ミー", "私を・私に"],
+    ["him", "ヒム", "彼を・彼に"],
+    ["them", "ゼム", "彼らを・彼らに"],
+    ["us", "アス", "私たちを・私たちに"],
+    ["mine", "マイン", "私のもの"],
+    ["yours", "ユアーズ", "あなたのもの"],
+    ["am", "アム", "～です（Iに使うbe動詞）"],
+    ["is", "イズ", "～です（he/she/itに使うbe動詞）"],
+    ["are", "アー", "～です（you/複数に使うbe動詞）"],
+    ["not", "ノット", "～でない"],
+    ["a", "ア", "1つの"],
+    ["an", "アン", "1つの（母音の前）"],
+    ["the", "ザ", "その"],
+    ["this", "ジス", "これ・この"],
+    ["that", "ザット", "あれ・あの"],
+    ["these", "ジーズ", "これら"],
+    ["those", "ゾウズ", "あれら"],
+    ["what", "ワット", "何"],
+    ["who", "フー", "だれ"],
+    ["when", "ウェン", "いつ"],
+    ["where", "ウェア", "どこ"],
+    ["which", "ウィッチ", "どちら・どの"],
+    ["whose", "フーズ", "だれの"],
+    ["why", "ワイ", "なぜ"],
+    ["how", "ハウ", "どうやって・どのくらい"],
+    ["and", "アンド", "～と・そして"],
+    ["or", "オア", "または"],
+    ["but", "バット", "しかし"],
+    ["so", "ソウ", "だから・とても"],
+    ["because", "ビコーズ", "なぜなら"],
+    ["too", "トゥー", "～もまた・～すぎる"],
+    ["also", "オールソウ", "～もまた"],
+    ["very", "ベリー", "とても"],
+    ["really", "リアリー", "本当に"],
+    ["then", "ゼン", "それから・そのとき"],
+    ["well", "ウェル", "上手に・ええと"],
+    ["please", "プリーズ", "どうぞ・お願いします"],
+    ["sorry", "ソーリー", "ごめんなさい・気の毒で"],
+    ["OK", "オウケイ", "いいよ・大丈夫"],
+    ["oh", "オウ", "おお・ああ"],
+    ["wow", "ワウ", "うわー・すごい"],
+    ["hey", "ヘイ", "やあ・ねえ"],
+    ["everyone", "エブリワン", "みんな"],
+    ["something", "サムシング", "何か"],
+    ["thank", "サンク", "感謝する（Thank you.＝ありがとう）"],
+    ["welcome", "ウェルカム", "ようこそ（You're welcome.＝どういたしまして）"],
+    ["excuse", "イクスキューズ", "許す（Excuse me.＝すみません）"],
+    ["Mr.", "ミスター", "～さん（男性）"],
+    ["Ms.", "ミズ", "～さん（女性）"],
+    // --- 前置詞 ---
+    ["in", "イン", "～の中に・～に"],
+    ["on", "オン", "～の上に・～に"],
+    ["at", "アット", "～で・～に"],
+    ["from", "フロム", "～から・～出身"],
+    ["of", "オブ", "～の"],
+    ["with", "ウィズ", "～と一緒に"],
+    ["about", "アバウト", "～について・約"],
+    ["for", "フォー", "～のために・～にとって"],
+    ["to", "トゥー", "～へ・～に"],
+    ["under", "アンダー", "～の下に"],
+    ["by", "バイ", "～のそばに・～によって"],
+    ["near", "ニア", "～の近くに"],
+    // --- 名詞 ---
+    ["fan", "ファン", "ファン・うちわ"],
+    ["member", "メンバー", "メンバー・一員"],
+    ["team", "ティーム", "チーム"],
+    ["band", "バンド", "バンド・楽団"],
+    ["festival", "フェスティバル", "祭り"],
+    ["uniform", "ユニフォーム", "制服・ユニフォーム"],
+    ["rule", "ルール", "規則・ルール"],
+    ["textbook", "テキストブック", "教科書"],
+    ["dictionary", "ディクショナリー", "辞書"],
+    ["pet", "ペット", "ペット"],
+    ["ball", "ボール", "ボール"],
+    ["racket", "ラケット", "ラケット"],
+    ["comic", "コミック", "マンガ"],
+    ["magazine", "マガジン", "雑誌"],
+    ["newspaper", "ニュースペーパー", "新聞"],
+    ["letter", "レター", "手紙・文字"],
+    ["e-mail", "イーメイル", "Eメール"],
+    ["phone", "フォウン", "電話"],
+    ["clock", "クロック", "時計（置き時計・掛け時計）"],
+    ["calendar", "キャレンダー", "カレンダー"],
+    ["map", "マップ", "地図"],
+    ["flag", "フラッグ", "旗"],
+    ["box", "ボックス", "箱"],
+    ["cup", "カップ", "カップ・茶わん"],
+    ["umbrella", "アンブレラ", "かさ"],
+    ["key", "キー", "かぎ"],
+    ["shirt", "シャツ", "シャツ"],
+    ["cap", "キャップ", "（ふちなし）ぼうし"],
+    ["hat", "ハット", "（ふちあり）ぼうし"],
+    ["shoes", "シューズ", "くつ"],
+    ["place", "プレイス", "場所"],
+    ["thing", "シング", "もの・こと"],
+    ["way", "ウェイ", "道・方法"],
+    ["plan", "プラン", "計画"],
+    ["weekend", "ウィーケンド", "週末"],
+    ["noon", "ヌーン", "正午"],
+    ["minute", "ミニット", "分"],
+    ["hour", "アワー", "1時間"],
+    ["month", "マンス", "月（暦の）"],
+    ["language", "ラングウィッジ", "言語・言葉"],
+    ["culture", "カルチャー", "文化"],
+    ["Canada", "キャナダ", "カナダ"],
+    ["India", "インディア", "インド"],
+    ["hero", "ヒーロウ", "ヒーロー・英雄"],
+    ["character", "キャラクター", "登場人物・キャラクター"],
+    ["anime", "アニメ", "アニメ"],
+    ["video game", "ビデオゲイム", "テレビゲーム"],
+    ["shop", "ショップ", "店・買い物する"],
+    ["coach", "コウチ", "コーチ"],
+    ["classmate", "クラスメイト", "同級生"],
+    ["speech", "スピーチ", "スピーチ・演説"],
+    ["hobby", "ホビー", "趣味"],
+    ["idea", "アイディア", "考え・アイデア"],
+    // --- 動詞 ---
+    ["call", "コール", "呼ぶ・電話する"],
+    ["need", "ニード", "必要とする"],
+    ["wear", "ウェア", "着ている・身につけている"],
+    ["show", "ショウ", "見せる・番組"],
+    ["tell", "テル", "伝える・言う"],
+    ["ask", "アスク", "たずねる・頼む"],
+    ["find", "ファインド", "見つける"],
+    ["relax", "リラックス", "くつろぐ"],
+    ["smile", "スマイル", "ほほえむ・笑顔"],
+    ["laugh", "ラフ", "（声を出して）笑う"],
+    ["cry", "クライ", "泣く・さけぶ"],
+    ["hope", "ホウプ", "望む・希望"],
+    ["wish", "ウィッシュ", "願う・願い"],
+    ["check", "チェック", "確認する"],
+    ["finish", "フィニッシュ", "終える・終わる"],
+    ["bring", "ブリング", "持ってくる"],
+    ["carry", "キャリー", "運ぶ"],
+    ["wait", "ウェイト", "待つ"],
+    ["stay", "ステイ", "滞在する・とどまる"],
+    ["work", "ワーク", "働く・仕事"],
+    ["remember", "リメンバー", "覚えている・思い出す"],
+    ["forget", "フォゲット", "忘れる"],
+    // --- 副詞・形容詞・数量 ---
+    ["sometimes", "サムタイムズ", "ときどき"],
+    ["often", "オフン", "よく・しばしば"],
+    ["usually", "ユージュアリー", "ふつうは・たいてい"],
+    ["always", "オールウェイズ", "いつも"],
+    ["never", "ネバー", "決して～ない"],
+    ["sure", "シュア", "確信して（Sure.＝もちろん）"],
+    ["amazing", "アメイジング", "驚くべき・すごい"],
+    ["awesome", "オーサム", "最高の・すごい"],
+    ["glad", "グラッド", "うれしい"],
+    ["ready", "レディ", "準備ができた"],
+    ["together", "トゥゲザー", "一緒に"],
+    ["only", "オウンリー", "～だけ"],
+    ["just", "ジャスト", "ちょうど・ただ～だけ"],
+    ["again", "アゲン", "もう一度・再び"],
+    ["many", "メニー", "たくさんの（数）"],
+    ["much", "マッチ", "たくさんの（量）"],
+    ["some", "サム", "いくつかの"],
+    ["any", "エニー", "いくつかの・少しも（～ない）"],
+    ["all", "オール", "すべての"],
+    ["every", "エブリー", "毎～・すべての"],
+    ["a lot of", "アロットオブ", "たくさんの"],
+    // --- 追加(学校生活・自己紹介) ---
+    ["age", "エイジ", "年齢"],
+    ["junior high school", "ジューニアハイスクール", "中学校"],
+    ["elementary school", "エレメンタリースクール", "小学校"],
+    ["high school", "ハイスクール", "高校"],
+    ["homeroom", "ホームルーム", "ホームルーム・学級"],
+    ["schedule", "スケジュール", "予定・時間割"],
+    ["period", "ピアリオド", "～時間目・期間"],
+    ["activity", "アクティビティ", "活動"],
+    ["volunteer", "ボランティア", "ボランティア"],
+    ["nickname", "ニックネイム", "ニックネーム・あだ名"],
+    ["hometown", "ホームタウン", "故郷・地元"],
+    ["life", "ライフ", "生活・人生・命"],
+    ["weekday", "ウィークデイ", "平日"],
+    ["group", "グループ", "グループ・集団"],
+    ["partner", "パートナー", "パートナー・相手"],
+    // --- 追加(動詞) ---
+    ["begin", "ビギン", "始める・始まる"],
+    ["become", "ビカム", "～になる"],
+    ["borrow", "ボロウ", "借りる"],
+    ["lend", "レンド", "貸す"],
+    // --- 追加(形容詞・副詞・代名詞) ---
+    ["friendly", "フレンドリー", "親しみやすい・友好的な"],
+    ["cheerful", "チアフル", "明るい・元気な"],
+    ["active", "アクティブ", "活発な"],
+    ["maybe", "メイビー", "たぶん"],
+    ["everybody", "エブリバディ", "みんな"],
+    ["someone", "サムワン", "だれか"],
+    ["anyone", "エニワン", "だれか・だれも"],
+    ["anything", "エニシング", "何か・何も"],
+    ["nothing", "ナッシング", "何も～ない"]
+  ]
+});
+
+// ================= 中1・2学期 =================
+window.WORD_DATA.push({
+  id: "c1_2",
+  label: "中1・2学期",
+  words: [
+    // --- 動詞 ---
+    ["does", "ダズ", "する（he/she/itのときのdo）"],
+    ["can", "キャン", "～できる"],
+    ["teach", "ティーチ", "教える"],
+    ["sell", "セル", "売る"],
+    ["move", "ムーブ", "動く・引っこす"],
+    ["jog", "ジョグ", "ジョギングする"],
+    ["shout", "シャウト", "さけぶ"],
+    ["touch", "タッチ", "さわる"],
+    ["smell", "スメル", "においがする・におい"],
+    ["taste", "テイスト", "味がする・味"],
+    ["sound", "サウンド", "～に聞こえる・音"],
+    ["hear", "ヒア", "聞こえる"],
+    ["choose", "チューズ", "選ぶ"],
+    ["collect", "コレクト", "集める"],
+    ["paint", "ペイント", "（絵の具で）描く・ぬる"],
+    ["save", "セイブ", "救う・ためる"],
+    ["spend", "スペンド", "（時間・お金を）使う"],
+    ["send", "センド", "送る"],
+    ["share", "シェア", "分け合う・共有する"],
+    ["follow", "フォロウ", "ついていく・従う"],
+    ["invite", "インバイト", "招待する"],
+    ["introduce", "イントロデュース", "紹介する"],
+    ["guess", "ゲス", "推測する（Guess what?＝あのね）"],
+    ["believe", "ビリーブ", "信じる"],
+    ["understand", "アンダースタンド", "理解する"],
+    ["mean", "ミーン", "意味する"],
+    ["worry", "ウォーリー", "心配する"],
+    ["miss", "ミス", "のがす・さびしく思う"],
+    ["hurry", "ハリー", "急ぐ"],
+    ["return", "リターン", "帰る・返す"],
+    ["arrive", "アライブ", "到着する"],
+    ["leave", "リーブ", "去る・出発する・置き忘れる"],
+    ["happen", "ハプン", "起こる"],
+    ["drive", "ドライブ", "運転する"],
+    // --- 名詞 ---
+    ["musician", "ミュージシャン", "音楽家"],
+    ["actor", "アクター", "俳優"],
+    ["writer", "ライター", "作家"],
+    ["engineer", "エンジニア", "技師・エンジニア"],
+    ["office", "オフィス", "事務所・会社"],
+    ["company", "カンパニー", "会社"],
+    ["contest", "コンテスト", "コンテスト・大会"],
+    ["chorus", "コーラス", "合唱"],
+    ["prize", "プライズ", "賞"],
+    ["winner", "ウィナー", "勝者"],
+    ["stage", "ステイジ", "舞台・ステージ"],
+    ["ticket", "ティケット", "チケット・切符"],
+    ["seat", "シート", "座席"],
+    ["audience", "オーディエンス", "観客"],
+    ["holiday", "ホリデイ", "休日・祝日"],
+    ["diary", "ダイアリー", "日記"],
+    ["recipe", "レシピ", "レシピ・作り方"],
+    ["dessert", "デザート", "デザート"],
+    ["snack", "スナック", "軽食・おやつ"],
+    ["bottle", "ボトル", "びん・ボトル"],
+    ["glass", "グラス", "コップ・ガラス"],
+    ["dish", "ディッシュ", "皿・料理"],
+    ["fork", "フォーク", "フォーク"],
+    ["knife", "ナイフ", "ナイフ"],
+    ["spoon", "スプーン", "スプーン"],
+    ["chopsticks", "チョップスティックス", "はし"],
+    ["menu", "メニュー", "メニュー"],
+    ["wall", "ウォール", "壁"],
+    ["floor", "フロア", "床・階"],
+    ["corner", "コーナー", "角・すみ"],
+    ["shelf", "シェルフ", "たな"],
+    ["mirror", "ミラー", "鏡"],
+    ["towel", "タウエル", "タオル"],
+    ["soap", "ソウプ", "せっけん"],
+    ["shower", "シャワー", "シャワー"],
+    ["stairs", "ステアーズ", "階段"],
+    ["elevator", "エレベイター", "エレベーター"],
+    ["roof", "ルーフ", "屋根"],
+    ["gate", "ゲイト", "門"],
+    ["husband", "ハズバンド", "夫"],
+    ["wife", "ワイフ", "妻"],
+    ["daughter", "ドーター", "娘"],
+    ["son", "サン", "息子"],
+    ["parent", "ペアレント", "親"],
+    ["neighbor", "ネイバー", "近所の人"],
+    ["guitar", "ギター", "ギター"],
+    ["piano", "ピアノウ", "ピアノ"],
+    ["violin", "バイオリン", "バイオリン"],
+    ["drum", "ドラム", "太鼓・ドラム"],
+    ["flute", "フルート", "フルート"],
+    ["trumpet", "トランペット", "トランペット"],
+    ["instrument", "インストゥルメント", "楽器・道具"],
+    ["concert", "コンサート", "コンサート"],
+    // --- 形容詞 ---
+    ["quiet", "クワイエット", "静かな"],
+    ["noisy", "ノイジー", "うるさい"],
+    ["loud", "ラウド", "（声・音が）大きい"],
+    ["dark", "ダーク", "暗い"],
+    ["bright", "ブライト", "明るい・かしこい"],
+    ["heavy", "ヘビー", "重い"],
+    ["light", "ライト", "軽い・光"],
+    ["dirty", "ダーティ", "きたない"],
+    ["wet", "ウェット", "ぬれた"],
+    ["dry", "ドライ", "乾いた"],
+    ["full", "フル", "いっぱいの・満腹の"],
+    ["empty", "エンプティ", "からの"],
+    ["rich", "リッチ", "金持ちの・豊かな"],
+    ["poor", "プア", "貧しい・かわいそうな"],
+    ["safe", "セイフ", "安全な"],
+    ["dangerous", "デインジャラス", "危険な"],
+    ["useful", "ユースフル", "役に立つ"],
+    ["careful", "ケアフル", "注意深い（Be careful.＝気をつけて）"],
+    ["wrong", "ロング", "まちがった"],
+    ["true", "トゥルー", "本当の"],
+    ["real", "リアル", "本物の・本当の"],
+    ["own", "オウン", "自分自身の"],
+    ["other", "アザー", "ほかの"],
+    ["another", "アナザー", "もう1つの・別の"],
+    ["each", "イーチ", "それぞれの"],
+    ["both", "ボウス", "両方の"],
+    ["few", "フュー", "少しの・ほとんどない"],
+    ["enough", "イナフ", "十分な"],
+    // --- 副詞・前置詞・位置 ---
+    ["tonight", "トゥナイト", "今夜"],
+    ["soon", "スーン", "すぐに"],
+    ["later", "レイター", "あとで"],
+    ["before", "ビフォー", "～の前に"],
+    ["after", "アフター", "～のあとに"],
+    ["during", "デュアリング", "～の間に"],
+    ["between", "ビトウィーン", "～の間に（2つの間）"],
+    ["behind", "ビハインド", "～のうしろに"],
+    ["around", "アラウンド", "～のまわりに・約"],
+    ["along", "アロング", "～に沿って"],
+    ["across", "アクロス", "～を横切って"],
+    ["through", "スルー", "～を通って"],
+    ["over", "オウバー", "～の上に・～をこえて"],
+    ["out", "アウト", "外へ"],
+    ["inside", "インサイド", "内側・中に"],
+    ["outside", "アウトサイド", "外側・外に"],
+    ["straight", "ストレイト", "まっすぐに"],
+    ["away", "アウェイ", "はなれて"],
+    ["back", "バック", "もどって・背中"],
+    ["in front of", "インフロントオブ", "～の前に"],
+    ["next to", "ネクストトゥー", "～のとなりに"],
+    ["o'clock", "オクロック", "～時（ちょうど）"],
+    // --- 学校行事 ---
+    ["sports day", "スポーツデイ", "運動会・体育祭"],
+    ["school trip", "スクールトリップ", "修学旅行"],
+    ["school festival", "スクールフェスティバル", "文化祭"],
+    ["entrance ceremony", "エントランスセレモニー", "入学式"],
+    // --- 追加(動詞) ---
+    ["agree", "アグリー", "賛成する"],
+    ["explain", "イクスプレイン", "説明する"],
+    ["promise", "プロミス", "約束する・約束"],
+    ["protect", "プロテクト", "守る"],
+    ["support", "サポート", "支える・応援する"],
+    ["cover", "カバー", "おおう"],
+    ["pick", "ピック", "つむ・選ぶ（pick up＝拾う）"],
+    ["plant", "プラント", "植える・植物"],
+    ["grow", "グロウ", "育てる・成長する"],
+    ["feed", "フィード", "えさをやる"],
+    // --- 追加(名詞) ---
+    ["information", "インフォメイション", "情報"],
+    ["problem", "プロブレム", "問題"],
+    ["reason", "リーズン", "理由"],
+    ["opinion", "オピニオン", "意見"],
+    ["fact", "ファクト", "事実"],
+    ["meaning", "ミーニング", "意味"],
+    ["word", "ワード", "単語・言葉"],
+    ["sentence", "センテンス", "文"],
+    ["page", "ペイジ", "ページ"],
+    ["example", "イグザンプル", "例"],
+    ["quiz", "クイズ", "クイズ・小テスト"],
+    // --- 追加(衣類) ---
+    ["clothes", "クロウズ", "服"],
+    ["sweater", "スウェター", "セーター"],
+    ["jacket", "ジャケット", "ジャケット・上着"],
+    ["coat", "コウト", "コート"],
+    ["pants", "パンツ", "ズボン"],
+    ["skirt", "スカート", "スカート"],
+    ["dress", "ドレス", "ドレス・ワンピース"],
+    ["pocket", "ポケット", "ポケット"],
+    ["glove", "グラブ", "手ぶくろ・グローブ"],
+    ["scarf", "スカーフ", "マフラー・スカーフ"],
+    ["boots", "ブーツ", "ブーツ・長ぐつ"],
+    ["sneakers", "スニーカーズ", "スニーカー"],
+    // --- 追加(形容詞・副詞) ---
+    ["thirsty", "サースティ", "のどがかわいた"],
+    ["serious", "シアリアス", "まじめな・深刻な"],
+    ["strict", "ストリクト", "厳しい"],
+    ["gentle", "ジェントル", "やさしい・おだやかな"],
+    ["slowly", "スロウリー", "ゆっくりと"],
+    ["quickly", "クイックリー", "すばやく"],
+    ["carefully", "ケアフリー", "注意深く・ていねいに"],
+    ["suddenly", "サドンリー", "突然"],
+    ["finally", "ファイナリー", "ついに・最後に"]
+  ]
+});
+
+// ================= 中1・3学期 =================
+window.WORD_DATA.push({
+  id: "c1_3",
+  label: "中1・3学期",
+  words: [
+    // --- be動詞・一般動詞の過去形 ---
+    ["was", "ワズ", "～だった（am/isの過去形）"],
+    ["were", "ワー", "～だった（areの過去形）"],
+    ["did", "ディッド", "した（doの過去形）"],
+    ["went", "ウェント", "行った（goの過去形）"],
+    ["came", "ケイム", "来た（comeの過去形）"],
+    ["saw", "ソー", "見た（seeの過去形）"],
+    ["ate", "エイト", "食べた（eatの過去形）"],
+    ["had", "ハッド", "持っていた（haveの過去形）"],
+    ["got", "ガット", "手に入れた（getの過去形）"],
+    ["took", "トゥック", "取った（takeの過去形）"],
+    ["gave", "ゲイブ", "与えた（giveの過去形）"],
+    ["made", "メイド", "作った（makeの過去形）"],
+    ["said", "セッド", "言った（sayの過去形）"],
+    ["wrote", "ロウト", "書いた（writeの過去形）"],
+    ["ran", "ラン", "走った（runの過去形）"],
+    ["swam", "スワム", "泳いだ（swimの過去形）"],
+    ["sang", "サング", "歌った（singの過去形）"],
+    ["bought", "ボート", "買った（buyの過去形）"],
+    ["brought", "ブロート", "持ってきた（bringの過去形）"],
+    ["thought", "ソート", "思った（thinkの過去形）"],
+    ["taught", "トート", "教えた（teachの過去形）"],
+    ["told", "トウルド", "伝えた（tellの過去形）"],
+    ["found", "ファウンド", "見つけた（findの過去形）"],
+    ["felt", "フェルト", "感じた（feelの過去形）"],
+    ["heard", "ハード", "聞こえた（hearの過去形）"],
+    ["held", "ヘルド", "開催した・持った（holdの過去形）"],
+    ["kept", "ケプト", "保った（keepの過去形）"],
+    ["knew", "ニュー", "知っていた（knowの過去形）"],
+    ["left", "レフト", "去った（leaveの過去形）"],
+    ["lost", "ロスト", "失った・負けた（loseの過去形）"],
+    ["met", "メット", "会った（meetの過去形）"],
+    ["sat", "サット", "座った（sitの過去形）"],
+    ["slept", "スレプト", "眠った（sleepの過去形）"],
+    ["spoke", "スポウク", "話した（speakの過去形）"],
+    ["stood", "ストゥッド", "立った（standの過去形）"],
+    ["understood", "アンダーストゥッド", "理解した（understandの過去形）"],
+    ["won", "ワン", "勝った（winの過去形）"],
+    ["wore", "ウォア", "着ていた（wearの過去形）"],
+    // --- 動詞 ---
+    ["travel", "トラベル", "旅行する"],
+    ["celebrate", "セレブレイト", "祝う"],
+    ["decorate", "デコレイト", "かざる"],
+    ["receive", "レシーブ", "受け取る"],
+    ["perform", "パフォーム", "演じる・演奏する"],
+    ["cheer", "チア", "応援する"],
+    ["clap", "クラップ", "拍手する"],
+    ["ring", "リング", "鳴る・指輪"],
+    ["snowboard", "スノウボード", "スノーボードをする"],
+    ["ski", "スキー", "スキーをする"],
+    ["skate", "スケイト", "スケートをする"],
+    ["hold", "ホウルド", "持つ・開催する"],
+    ["keep", "キープ", "保つ・飼う"],
+    ["lose", "ルーズ", "失う・負ける"],
+    // --- 名詞 ---
+    ["New Year", "ニューイヤー", "新年・正月"],
+    ["snowman", "スノウマン", "雪だるま"],
+    ["fireworks", "ファイヤーワークス", "花火"],
+    ["luck", "ラック", "運（Good luck!＝がんばって）"],
+    ["fortune", "フォーチュン", "運勢・財産"],
+    ["gift", "ギフト", "贈り物"],
+    ["card", "カード", "カード・はがき"],
+    ["message", "メッセージ", "メッセージ・伝言"],
+    ["memory", "メモリー", "思い出・記憶"],
+    ["moment", "モウメント", "瞬間"],
+    ["experience", "イクスピアリエンス", "経験"],
+    ["report", "リポート", "レポート・報告"],
+    ["presentation", "プレゼンテイション", "発表・プレゼン"],
+    ["graduation", "グラデュエイション", "卒業"],
+    ["ceremony", "セレモニー", "式・式典"],
+    ["grade", "グレイド", "学年・成績"],
+    ["score", "スコア", "得点"],
+    ["result", "リザルト", "結果"],
+    ["effort", "エフォート", "努力"],
+    ["goal", "ゴウル", "目標・ゴール"],
+    ["future", "フューチャー", "未来・将来"],
+    ["ice", "アイス", "氷"],
+    ["hill", "ヒル", "丘"],
+    ["pond", "ポンド", "池"],
+    ["leaf", "リーフ", "葉"],
+    ["stone", "ストウン", "石"],
+    ["ground", "グラウンド", "地面"],
+    ["field", "フィールド", "野原・畑・競技場"],
+    ["air", "エア", "空気"],
+    ["fire", "ファイヤー", "火"],
+    ["voice", "ボイス", "声"],
+    ["noise", "ノイズ", "騒音・物音"],
+    ["story", "ストーリー", "物語・話"],
+    ["news", "ニュース", "ニュース・知らせ"],
+    ["event", "イベント", "行事・出来事"],
+    ["custom", "カスタム", "習慣・風習"],
+    ["tradition", "トラディション", "伝統"],
+    ["kimono", "キモノ", "着物"],
+    ["rice cake", "ライスケイク", "もち"],
+    // --- 形容詞 ---
+    ["excited", "イクサイティッド", "わくわくした"],
+    ["surprised", "サプライズド", "驚いた"],
+    ["interested", "インタレスティッド", "興味を持った"],
+    ["bored", "ボアード", "退屈した"],
+    ["scared", "スケアード", "こわがった"],
+    ["nervous", "ナーバス", "緊張した"],
+    ["proud", "プラウド", "誇りに思う"],
+    ["shy", "シャイ", "恥ずかしがりの"],
+    ["honest", "オネスト", "正直な"],
+    ["smart", "スマート", "かしこい"],
+    ["clever", "クレバー", "りこうな"],
+    ["cheap", "チープ", "安い"],
+    ["expensive", "イクスペンシブ", "高価な"],
+    ["traditional", "トラディショナル", "伝統的な"],
+    ["national", "ナショナル", "国の・国民の"],
+    ["international", "インターナショナル", "国際的な"],
+    ["local", "ロウカル", "地元の"],
+    ["foreign", "フォーリン", "外国の"],
+    ["natural", "ナチュラル", "自然の"],
+    ["perfect", "パーフェクト", "完璧な"],
+    ["terrible", "テリブル", "ひどい"],
+    ["lucky", "ラッキー", "幸運な"],
+    ["peaceful", "ピースフル", "平和な・おだやかな"],
+    ["crowded", "クラウディッド", "こんだ"],
+    ["same", "セイム", "同じ"],
+    ["different", "ディファレント", "ちがう・異なる"],
+    // --- 副詞・熟語 ---
+    ["ago", "アゴウ", "（今から）～前に"],
+    ["last", "ラスト", "この前の・最後の"],
+    ["next", "ネクスト", "次の"],
+    ["abroad", "アブロード", "外国へ・外国で"],
+    ["of course", "オブコース", "もちろん"],
+    ["for example", "フォーイグザンプル", "例えば"],
+    ["over there", "オウバーゼア", "向こうに・あそこに"],
+    ["at first", "アットファースト", "最初は"],
+    ["one day", "ワンデイ", "ある日"],
+    ["how about ~?", "ハウアバウト", "～はどうですか"],
+    // --- 追加(動詞) ---
+    ["change", "チェインジ", "変える・変わる"],
+    ["die", "ダイ", "死ぬ"],
+    ["order", "オーダー", "注文する・順番"],
+    ["pay", "ペイ", "支払う"],
+    ["wrap", "ラップ", "包む"],
+    ["pass", "パス", "合格する・手渡す・通り過ぎる"],
+    ["fail", "フェイル", "失敗する・落ちる"],
+    ["solve", "ソルブ", "解く・解決する"],
+    ["review", "レビュー", "復習する"],
+    ["prepare", "プリペア", "準備する"],
+    ["graduate", "グラデュエイト", "卒業する"],
+    ["enter", "エンター", "入る・入学する"],
+    ["exercise", "エクササイズ", "運動する・運動"],
+    ["rest", "レスト", "休む・休憩"],
+    // --- 追加(名詞) ---
+    ["exam", "イグザム", "試験"],
+    ["semester", "セメスター", "学期"],
+    ["sightseeing", "サイトシーイング", "観光"],
+    ["spot", "スポット", "場所・地点"],
+    ["area", "エアリア", "地域・エリア"],
+    ["host family", "ホストファミリー", "ホストファミリー"],
+    ["exchange student", "イクスチェインジステューデント", "交換留学生"],
+    ["temperature", "テンペラチャー", "温度・気温"],
+    ["north", "ノース", "北"],
+    ["south", "サウス", "南"],
+    ["east", "イースト", "東"],
+    ["west", "ウェスト", "西"],
+    ["mistake", "ミステイク", "まちがい"],
+    ["chance", "チャンス", "機会・チャンス"],
+    ["block", "ブロック", "区画・ブロック"],
+    ["meter", "ミーター", "メートル"],
+    ["kilometer", "キロミーター", "キロメートル"],
+    ["bath", "バス", "ふろ"],
+    ["meal", "ミール", "食事"],
+    ["health", "ヘルス", "健康"],
+    // --- 追加(形容詞・副詞) ---
+    ["sick", "シック", "病気の"],
+    ["weak", "ウィーク", "弱い"],
+    ["healthy", "ヘルシー", "健康な"],
+    ["deep", "ディープ", "深い"],
+    ["wide", "ワイド", "広い"],
+    ["narrow", "ナロウ", "せまい"],
+    ["thick", "シック", "厚い"],
+    ["thin", "シン", "うすい・やせた"],
+    ["far", "ファー", "遠い・遠くに"],
+    ["everywhere", "エブリウェア", "どこでも"],
+    ["somewhere", "サムウェア", "どこかに"],
+    ["once", "ワンス", "1回・かつて"],
+    ["twice", "トゥワイス", "2回"],
+    // --- 追加(疑問フレーズ) ---
+    ["how many ~?", "ハウメニー", "いくつの～（数をたずねる）"],
+    ["how much ~?", "ハウマッチ", "いくら・どれくらいの量"],
+    ["how long ~?", "ハウロング", "どれくらいの長さ・期間"],
+    ["how often ~?", "ハウオフン", "どれくらいの頻度で"]
+  ]
+});
+
+</script>
+<script>
+// ================= データ整理 =================
+// 表示順と学年グループの定義（データファイルが追加されると自動で出てくる）
+const MANIFEST = [
+  { grade: "小学校", ids: ["shou"] },
+  { grade: "フレーズ", ids: ["phrase"] },
+  { grade: "中学1年", ids: ["c1_1", "c1_2", "c1_3"] },
+  { grade: "中学2年", ids: ["c2_1", "c2_2", "c2_3"] },
+  { grade: "中学3年", ids: ["c3_1", "c3_2", "c3_3"] },
+  { grade: "高校1年", ids: ["k1_1", "k1_2", "k1_3"] },
+  { grade: "高校2年", ids: ["k2_1", "k2_2", "k2_3"] },
+  { grade: "高校3年", ids: ["k3_1", "k3_2", "k3_3"] },
+];
+const SHORT_LABEL = { shou: "小学校の復習", phrase: "会話フレーズ" };
+["c","k"].forEach(g => { for (let i = 1; i <= 3; i++) for (let t = 1; t <= 3; t++)
+  SHORT_LABEL[`${g}${i}_${t}`] = `${g === "c" ? "中" : "高"}${i}・${t}学期`; });
+
+const DATA = {};
+(window.WORD_DATA || []).forEach(d => { DATA[d.id] = d; });
+
+// ================= 状態 =================
+const LS_KEY = "eitango_records_v1";
+let selected = new Set();
+let dir = "e2j"; // e2j: 英→日, j2e: 日→英
+let quiz = null;
+
+function loadRec() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } }
+function saveRec(r) { localStorage.setItem(LS_KEY, JSON.stringify(r)); }
+
+// ================= ホーム描画 =================
+function renderRanges() {
+  const area = document.getElementById("range-area");
+  area.innerHTML = "";
+  MANIFEST.forEach(group => {
+    const avail = group.ids.filter(id => DATA[id]);
+    if (avail.length === 0) return; // データ未登録の学年は非表示
+    const g = document.createElement("div");
+    g.className = "grade-group";
+    g.innerHTML = `<div class="grade-name">${group.grade}</div>`;
+    const grid = document.createElement("div");
+    grid.className = "range-grid";
+    avail.forEach(id => {
+      const chip = document.createElement("div");
+      chip.className = "range-chip" + (selected.has(id) ? " on" : "");
+      chip.innerHTML = `${SHORT_LABEL[id] || DATA[id].label}<span class="cnt">${DATA[id].words.length}語</span>`;
+      chip.onclick = () => {
+        selected.has(id) ? selected.delete(id) : selected.add(id);
+        renderRanges(); renderRecords();
+        document.getElementById("home-warn").textContent = "";
+      };
+      grid.appendChild(chip);
+    });
+    g.appendChild(grid);
+    area.appendChild(g);
+  });
+}
+
+function comboKey() { return [...selected].sort().join("+"); }
+function comboLabel(key) {
+  return key.split("+").map(id => SHORT_LABEL[id] || id).join(" + ");
+}
+function poolOf(ids) {
+  let pool = [];
+  ids.forEach(id => { if (DATA[id]) pool = pool.concat(DATA[id].words); });
+  // 完全に同じ (単語+意味) だけ除去
+  const seen = new Set();
+  return pool.filter(w => {
+    const k = w[0] + "|" + w[2];
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+function renderRecords() {
+  const rec = loadRec();
+  const area = document.getElementById("rec-area");
+  const keys = Object.keys(rec);
+  if (keys.length === 0) {
+    area.innerHTML = '<div class="rec-empty">まだ記録がないよ。クイズに挑戦してみよう!</div>';
+    return;
+  }
+  // 選択中の組み合わせを先頭に、あとは記録のある順
+  keys.sort((a, b) => (b === comboKey()) - (a === comboKey()));
+  area.innerHTML = keys.map(k => {
+    const r = rec[k];
+    const total = poolOf(k.split("+")).length;
+    const parts = [];
+    if (r.e2j) parts.push(`英→日 <b>${r.e2j.best}</b>`);
+    if (r.j2e) parts.push(`日→英 <b>${r.j2e.best}</b>`);
+    return `<div class="rec-row">
+      <span class="rec-label">${comboLabel(k)}</span>
+      <span class="rec-val">${parts.join(" ／ ")} <span class="of">/ ${total}語</span></span>
+    </div>`;
+  }).join("");
+}
+
+function setDir(d) {
+  dir = d;
+  document.getElementById("dir-e2j").classList.toggle("on", d === "e2j");
+  document.getElementById("dir-j2e").classList.toggle("on", d === "j2e");
+}
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+function goHome() { renderRanges(); renderRecords(); show("scr-home"); }
+
+// ================= クイズ =================
+function shuffle(a) {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  if (selected.size === 0) {
+    document.getElementById("home-warn").textContent = "出題範囲を1つ以上えらんでね!";
+    show("scr-home");
+    return;
+  }
+  const pool = poolOf([...selected]);
+  quiz = {
+    pool: pool,
+    order: shuffle(pool),
+    idx: 0,
+    streak: 0,
+    lap: 1,
+    key: comboKey(),
+    dir: dir,
+    lock: false,
+  };
+  show("scr-quiz");
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const q = quiz;
+  if (q.idx >= q.order.length) { // 一周クリア → シャッフルして次の周へ
+    q.order = shuffle(q.pool);
+    q.idx = 0;
+    q.lap++;
+  }
+  q.current = q.order[q.idx];
+  q.lock = false;
+
+  const word = q.current;
+  const isE2J = q.dir === "e2j";
+  document.getElementById("q-word").textContent = isE2J ? word[0] : word[2];
+  document.getElementById("q-word").className = "q-word" + (isE2J ? "" : " jp");
+  document.getElementById("q-reading").textContent = "";
+  document.getElementById("streak-num").textContent = q.streak;
+  document.getElementById("lap-note").textContent =
+    q.lap > 1 ? `⭐ 全${q.pool.length}語を${q.lap - 1}周クリア中!` : `全${q.pool.length}語 / のこり${q.order.length - q.idx}語`;
+
+  // 4択生成: 正解 + まちがい3つ（同じ意味・同じ単語は除外）
+  const ansText = isE2J ? word[2] : word[0];
+  const wrongs = [];
+  const cand = shuffle(q.pool.filter(w => w !== word && (isE2J ? w[2] : w[0]) !== ansText));
+  for (const w of cand) {
+    const t = isE2J ? w[2] : w[0];
+    if (!wrongs.includes(t)) wrongs.push(t);
+    if (wrongs.length === 3) break;
+  }
+  const options = shuffle([ansText, ...wrongs]);
+
+  const box = document.getElementById("choices");
+  box.innerHTML = "";
+  options.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "choice-btn";
+    b.textContent = opt;
+    b.onclick = () => answer(b, opt === ansText, ansText);
+    box.appendChild(b);
+  });
+}
+
+function answer(btn, ok, ansText) {
+  const q = quiz;
+  if (q.lock) return;
+  q.lock = true;
+  document.getElementById("q-reading").textContent = q.current[1]; // 読みを表示
+
+  const btns = [...document.querySelectorAll(".choice-btn")];
+  btns.forEach(b => { if (b.textContent === ansText) b.classList.add("correct"); else b.classList.add("dim"); });
+
+  if (ok) {
+    q.streak++;
+    q.idx++;
+    document.getElementById("streak-num").textContent = q.streak;
+    setTimeout(nextQuestion, 550);
+  } else {
+    btn.classList.remove("dim");
+    btn.classList.add("wrong");
+    setTimeout(() => endQuiz(false), 1100);
+  }
+}
+
+function quitQuiz() { endQuiz(true); }
+
+function endQuiz(quit) {
+  const q = quiz;
+  const rec = loadRec();
+  const entry = rec[q.key] || {};
+  const old = entry[q.dir] ? entry[q.dir].best : 0;
+  const isNew = q.streak > old;
+  if (isNew) {
+    entry[q.dir] = { best: q.streak, date: new Date().toLocaleDateString("ja-JP") };
+    rec[q.key] = entry;
+    saveRec(rec);
+  }
+
+  document.getElementById("result-score").textContent = q.streak;
+  const total = q.pool.length;
+  const emoji = q.streak >= total ? "👑" : q.streak >= total * 0.7 ? "🥳" : q.streak >= 10 ? "😊" : "😢";
+  document.getElementById("result-emoji").textContent = emoji;
+  document.getElementById("result-msg").textContent =
+    `${comboLabel(q.key)}（全${total}語）／ ${q.dir === "e2j" ? "英語→意味" : "意味→英語"}` +
+    (q.lap > 1 ? ` ／ ${q.lap - 1}周クリア!` : "");
+  document.getElementById("result-record").innerHTML = isNew
+    ? '<div class="new-record">🎉 新記録!</div>'
+    : `<div class="result-best">これまでの最高: ${old} 連続</div>`;
+
+  const miss = document.getElementById("miss-box");
+  if (!quit && q.current) {
+    miss.style.display = "";
+    miss.innerHTML = `この単語でまちがえたよ:<br>
+      <span class="w">${q.current[0]}</span> <span class="r">${q.current[1]}</span>
+      <div class="m">${q.current[2]}</div>`;
+  } else {
+    miss.style.display = "none";
+  }
+  show("scr-result");
+}
+
+// ================= 単語帳 =================
+let hideMeaning = false;
+let bookLimit = 100;
+
+function openBook() {
+  if (selected.size === 0) {
+    document.getElementById("home-warn").textContent = "出題範囲を1つ以上えらんでね!";
+    return;
+  }
+  document.getElementById("search").value = "";
+  bookLimit = 100;
+  renderBook();
+  show("scr-book");
+}
+
+function toggleMeaning() {
+  hideMeaning = !hideMeaning;
+  document.getElementById("hide-mn").classList.toggle("on", hideMeaning);
+  document.getElementById("hide-mn").textContent = hideMeaning ? "意味を出す" : "意味をかくす";
+  renderBook();
+}
+
+function renderBook() {
+  const kw = document.getElementById("search").value.trim().toLowerCase();
+  const ids = [...selected].sort();
+  let rows = [];
+  ids.forEach(id => {
+    if (!DATA[id]) return;
+    DATA[id].words.forEach(w => rows.push({ w, tag: SHORT_LABEL[id] || id }));
+  });
+  if (kw) {
+    rows = rows.filter(r =>
+      r.w[0].toLowerCase().includes(kw) || r.w[1].includes(kw) || r.w[2].includes(kw));
+    // 完全一致 → 前方一致 → 部分一致の順に表示
+    const rank = r => {
+      const en = r.w[0].toLowerCase();
+      if (en === kw || r.w[2] === kw) return 0;
+      if (en.startsWith(kw) || r.w[2].startsWith(kw)) return 1;
+      return 2;
+    };
+    rows.sort((a, b) => rank(a) - rank(b));
+  }
+  document.getElementById("book-count").textContent = `${rows.length}語`;
+  const list = document.getElementById("book-list");
+  const shown = rows.slice(0, bookLimit);
+  list.innerHTML = shown.map((r, i) => `
+    <div class="word-row" onclick="this.querySelector('.mn').classList.toggle('hidden')">
+      <span class="tag">${r.tag}</span>
+      <span class="en">${r.w[0]}</span><span class="rd">${r.w[1]}</span>
+      <div class="mn${hideMeaning ? " hidden" : ""}">${r.w[2]}</div>
+    </div>`).join("");
+  if (rows.length > bookLimit) {
+    list.innerHTML += `<button class="load-more" onclick="bookLimit+=200;renderBook()">もっと見る（あと${rows.length - bookLimit}語）</button>`;
+  }
+}
+
+// ================= 初期化 =================
+// 前回の選択を復元
+try {
+  const last = JSON.parse(localStorage.getItem("eitango_last_sel") || "[]");
+  last.forEach(id => { if (DATA[id]) selected.add(id); });
+} catch (e) {}
+if (selected.size === 0 && DATA["c1_1"]) selected.add("c1_1");
+window.addEventListener("beforeunload", () => {
+  localStorage.setItem("eitango_last_sel", JSON.stringify([...selected]));
+});
+renderRanges();
+renderRecords();
+</script>
+</body>
+</html>

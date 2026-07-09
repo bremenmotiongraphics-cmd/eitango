@@ -103,6 +103,14 @@
   .choice-btn.dim { opacity: .45; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
   .lap-note { text-align: center; font-size: 11px; color: #b9b0d4; margin-top: 10px; }
+  #next-btn {
+    width: 100%; margin-top: 12px; padding: 15px; border: none; border-radius: 14px;
+    background: #7c5cbf; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(124, 92, 191, .3);
+  }
+  #next-btn:active { transform: scale(.98); }
+  .nigate-row { display: flex; gap: 8px; margin-top: 8px; }
+  .nigate-note { font-size: 12px; color: #9c93b8; }
 
   /* ===== 結果画面 ===== */
   .result-card { text-align: center; padding: 30px 16px; }
@@ -184,6 +192,11 @@
     <div id="home-warn" class="warn"></div>
 
     <div class="card" style="margin-top:14px;">
+      <h2>😖 にがて単語 <span id="nigate-count" style="color:#f4749b;"></span></h2>
+      <div id="nigate-body"></div>
+    </div>
+
+    <div class="card">
       <h2>🏆 これまでの記録</h2>
       <div id="rec-area"><div class="rec-empty">まだ記録がないよ。クイズに挑戦してみよう!</div></div>
     </div>
@@ -192,14 +205,18 @@
   <!-- ============ クイズ ============ -->
   <div id="scr-quiz" class="screen">
     <div class="quiz-top">
-      <div class="streak-box"><span class="num" id="streak-num">0</span> 連続正解</div>
-      <button class="quit-btn" onclick="quitQuiz()">やめる</button>
+      <div class="streak-box"><span class="num" id="streak-num">0</span> <span id="streak-label">連続正解</span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="quit-btn" id="auto-btn" onclick="toggleAuto()">▶ 手動</button>
+        <button class="quit-btn" onclick="quitQuiz()">やめる</button>
+      </div>
     </div>
     <div class="q-card">
       <div class="q-word" id="q-word"></div>
       <div class="q-reading" id="q-reading"></div>
     </div>
     <div class="choices" id="choices"></div>
+    <button id="next-btn" style="display:none;"></button>
     <div class="lap-note" id="lap-note"></div>
   </div>
 
@@ -207,12 +224,12 @@
   <div id="scr-result" class="screen">
     <div class="card result-card">
       <div class="result-emoji" id="result-emoji">😢</div>
-      <div class="result-score"><span id="result-score">0</span><small> 連続正解</small></div>
+      <div class="result-score"><span id="result-score">0</span><small id="result-unit"> 連続正解</small></div>
       <div class="result-msg" id="result-msg"></div>
       <div id="result-record"></div>
       <div class="miss-box" id="miss-box"></div>
       <div class="main-btns" style="margin-top:14px;">
-        <button class="big-btn btn-quiz" onclick="startQuiz()">もう一回!</button>
+        <button class="big-btn btn-quiz" onclick="retryQuiz()">もう一回!</button>
         <button class="big-btn btn-book" onclick="goHome()">ホームへ</button>
       </div>
     </div>
@@ -1028,6 +1045,83 @@ window.WORD_DATA.push({
   ]
 });
 
+// ================= 中1フレーズ（熟語・連語） =================
+window.WORD_DATA.push({
+  id: "phrase_c1",
+  label: "中1フレーズ（熟語・連語）",
+  words: [
+    // --- 毎日の行動 ---
+    ["get up", "ゲットアップ", "起きる"],
+    ["go to bed", "ゴウトゥーベッド", "寝る"],
+    ["go to school", "ゴウトゥースクール", "学校へ行く"],
+    ["come home", "カムホーム", "家に帰る"],
+    ["take a bath", "テイクアバス", "風呂に入る"],
+    ["take a picture", "テイクアピクチャー", "写真をとる"],
+    ["take a walk", "テイクアウォーク", "散歩する"],
+    ["listen to music", "リスントゥーミュージック", "音楽を聞く"],
+    ["do my homework", "ドゥーマイホームワーク", "宿題をする"],
+    ["do my best", "ドゥーマイベスト", "全力をつくす"],
+    ["stay home", "ステイホーム", "家にいる"],
+    ["stay up late", "ステイアップレイト", "夜ふかしする"],
+    // --- 時・場所 ---
+    ["after school", "アフタースクール", "放課後"],
+    ["every day", "エブリデイ", "毎日"],
+    ["every week", "エブリウィーク", "毎週"],
+    ["on weekends", "オンウィーケンズ", "週末に"],
+    ["at home", "アットホーム", "家で"],
+    ["at school", "アットスクール", "学校で"],
+    ["at night", "アットナイト", "夜に"],
+    ["in the morning", "インザモーニング", "朝に"],
+    ["in the afternoon", "インジアフタヌーン", "午後に"],
+    ["right now", "ライトナウ", "今すぐ"],
+    ["all day", "オールデイ", "一日中"],
+    ["for a long time", "フォーアロングタイム", "長い間"],
+    ["from A to B", "フロムエイトゥービー", "AからBまで"],
+    // --- 動詞の熟語 ---
+    ["look at ~", "ルックアット", "～を見る"],
+    ["look for ~", "ルックフォー", "～をさがす"],
+    ["look like ~", "ルックライク", "～のように見える"],
+    ["wait for ~", "ウェイトフォー", "～を待つ"],
+    ["talk with ~", "トークウィズ", "～と話す"],
+    ["take care of ~", "テイクケアオブ", "～の世話をする"],
+    ["get to ~", "ゲットトゥー", "～に着く"],
+    ["put on ~", "プットオン", "～を身につける"],
+    ["take off ~", "テイクオフ", "～をぬぐ"],
+    ["turn on ~", "ターンオン", "（電気などを）つける"],
+    ["turn off ~", "ターンオフ", "（電気などを）消す"],
+    ["pick up ~", "ピックアップ", "～を拾う・迎えに行く"],
+    ["get on ~", "ゲットオン", "（乗り物に）乗る"],
+    ["get off ~", "ゲットオフ", "（乗り物から）降りる"],
+    ["come in", "カムイン", "入る"],
+    ["go out", "ゴウアウト", "出かける"],
+    ["come back", "カムバック", "帰ってくる"],
+    ["go back", "ゴウバック", "もどる"],
+    ["run away", "ランアウェイ", "にげる"],
+    ["say hello to ~", "セイハロートゥー", "～によろしく伝える"],
+    ["speak to ~", "スピークトゥー", "～に話しかける"],
+    // --- be動詞の熟語 ---
+    ["be from ~", "ビーフロム", "～出身である"],
+    ["be good at ~", "ビーグッドアット", "～が得意だ"],
+    ["be late for ~", "ビーレイトフォー", "～に遅れる"],
+    ["be famous for ~", "ビーフェイマスフォー", "～で有名だ"],
+    ["be interested in ~", "ビーインタレスティッドイン", "～に興味がある"],
+    // --- したいこと・お出かけ ---
+    ["want to ~", "ウォントトゥー", "～したい"],
+    ["want to be ~", "ウォントトゥービー", "～になりたい"],
+    ["go shopping", "ゴウショッピング", "買い物に行く"],
+    ["go fishing", "ゴウフィッシング", "つりに行く"],
+    ["go camping", "ゴウキャンピング", "キャンプに行く"],
+    ["have a good time", "ハブアグッドタイム", "楽しい時間を過ごす"],
+    // --- 数量・その他 ---
+    ["a lot", "アロット", "たくさん"],
+    ["each other", "イーチアザー", "おたがい"],
+    ["a member of ~", "アメンバーオブ", "～の一員"],
+    ["a glass of ~", "アグラスオブ", "コップ1杯の～"],
+    ["a cup of ~", "アカップオブ", "カップ1杯の～"],
+    ["a piece of ~", "アピースオブ", "1切れの～"]
+  ]
+});
+
 // 英単語データ: 中学1年（1学期・2学期・3学期）
 // 形式: ["単語", "読み(カナ)", "意味"]
 window.WORD_DATA = window.WORD_DATA || [];
@@ -1648,7 +1742,7 @@ window.WORD_DATA.push({
 // 表示順と学年グループの定義（データファイルが追加されると自動で出てくる）
 const MANIFEST = [
   { grade: "小学校", ids: ["shou"] },
-  { grade: "フレーズ", ids: ["phrase"] },
+  { grade: "フレーズ", ids: ["phrase", "phrase_c1", "phrase_c2", "phrase_c3", "phrase_k1", "phrase_k2", "phrase_k3"] },
   { grade: "中学1年", ids: ["c1_1", "c1_2", "c1_3"] },
   { grade: "中学2年", ids: ["c2_1", "c2_2", "c2_3"] },
   { grade: "中学3年", ids: ["c3_1", "c3_2", "c3_3"] },
@@ -1656,21 +1750,38 @@ const MANIFEST = [
   { grade: "高校2年", ids: ["k2_1", "k2_2", "k2_3"] },
   { grade: "高校3年", ids: ["k3_1", "k3_2", "k3_3"] },
 ];
-const SHORT_LABEL = { shou: "小学校の復習", phrase: "会話フレーズ" };
-["c","k"].forEach(g => { for (let i = 1; i <= 3; i++) for (let t = 1; t <= 3; t++)
-  SHORT_LABEL[`${g}${i}_${t}`] = `${g === "c" ? "中" : "高"}${i}・${t}学期`; });
+const SHORT_LABEL = { shou: "小学校の復習", phrase: "基本フレーズ" };
+["c","k"].forEach(g => { for (let i = 1; i <= 3; i++) {
+  SHORT_LABEL[`phrase_${g}${i}`] = `${g === "c" ? "中" : "高"}${i}フレーズ`;
+  for (let t = 1; t <= 3; t++)
+    SHORT_LABEL[`${g}${i}_${t}`] = `${g === "c" ? "中" : "高"}${i}・${t}学期`;
+} });
 
 const DATA = {};
 (window.WORD_DATA || []).forEach(d => { DATA[d.id] = d; });
 
 // ================= 状態 =================
 const LS_KEY = "eitango_records_v1";
+const NG_KEY = "eitango_nigate_v1";
 let selected = new Set();
 let dir = "e2j"; // e2j: 英→日, j2e: 日→英
 let quiz = null;
+let autoMode = localStorage.getItem("eitango_auto") === "1"; // 自動で次へ進むか
 
 function loadRec() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } }
 function saveRec(r) { localStorage.setItem(LS_KEY, JSON.stringify(r)); }
+
+// ===== にがて単語ストック =====
+function loadNigate() { try { return JSON.parse(localStorage.getItem(NG_KEY)) || {}; } catch (e) { return {}; } }
+function saveNigate(o) { localStorage.setItem(NG_KEY, JSON.stringify(o)); }
+function nKey(w) { return w[0] + "|" + w[2]; }
+function nigateAdd(w) { const o = loadNigate(); o[nKey(w)] = w; saveNigate(o); }
+function nigateRemove(w) { const o = loadNigate(); if (o[nKey(w)]) { delete o[nKey(w)]; saveNigate(o); } }
+
+// カタカナ→ひらがな変換（検索用）
+function kanaFold(s) {
+  return String(s).toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
 
 // ================= ホーム描画 =================
 function renderRanges() {
@@ -1750,7 +1861,23 @@ function show(id) {
   document.getElementById(id).classList.add("active");
   window.scrollTo(0, 0);
 }
-function goHome() { renderRanges(); renderRecords(); show("scr-home"); }
+function goHome() { bookNigate = false; renderRanges(); renderRecords(); renderNigate(); show("scr-home"); }
+
+function renderNigate() {
+  const list = Object.values(loadNigate());
+  document.getElementById("nigate-count").textContent = list.length ? `${list.length}語` : "";
+  const body = document.getElementById("nigate-body");
+  if (list.length === 0) {
+    body.innerHTML = '<div class="rec-empty">まちがえた単語がここにたまるよ。今はゼロ! 🎉</div>';
+    return;
+  }
+  body.innerHTML = `
+    <div class="nigate-note">クイズでまちがえた単語のリスト。正解すると自動で消えるよ。</div>
+    <div class="nigate-row">
+      <button class="dir-btn on" style="background:#f4749b;border-color:#f4749b;" onclick="startNigate()">💪 克服クイズ</button>
+      <button class="dir-btn" onclick="openNigateBook()">📋 一覧を見る</button>
+    </div>`;
+}
 
 // ================= クイズ =================
 function shuffle(a) {
@@ -1761,6 +1888,28 @@ function shuffle(a) {
   }
   return a;
 }
+
+function updateAutoBtn() {
+  document.getElementById("auto-btn").textContent = autoMode ? "⚡ 自動" : "▶ 手動";
+}
+function toggleAuto() {
+  autoMode = !autoMode;
+  localStorage.setItem("eitango_auto", autoMode ? "1" : "0");
+  updateAutoBtn();
+  // 回答表示中に切り替えたら、手動→自動の場合は即進める
+  if (quiz && quiz.lock && autoMode && quiz.pendingNext) {
+    const fn = quiz.pendingNext; quiz.pendingNext = null;
+    hideNextBtn(); fn();
+  }
+}
+function showNextBtn(label, fn) {
+  const b = document.getElementById("next-btn");
+  b.textContent = label;
+  b.style.display = "";
+  quiz.pendingNext = fn;
+  b.onclick = () => { quiz.pendingNext = null; hideNextBtn(); fn(); };
+}
+function hideNextBtn() { document.getElementById("next-btn").style.display = "none"; }
 
 function startQuiz() {
   if (selected.size === 0) {
@@ -1779,13 +1928,39 @@ function startQuiz() {
     dir: dir,
     lock: false,
   };
+  document.getElementById("streak-label").textContent = "連続正解";
+  updateAutoBtn();
+  show("scr-quiz");
+  nextQuestion();
+}
+
+// にがて克服クイズ: ストック全部を1周、正解したらストックから消える
+function startNigate() {
+  const list = shuffle(Object.values(loadNigate()));
+  if (list.length === 0) return;
+  quiz = {
+    pool: list,
+    distPool: poolOf(MANIFEST.flatMap(g => g.ids)), // まちがい選択肢は全単語から
+    order: list,
+    idx: 0,
+    streak: 0, // 克服数として使う
+    ngCount: 0,
+    nigate: true,
+    dir: dir,
+    lock: false,
+  };
+  document.getElementById("streak-label").textContent = "克服";
+  updateAutoBtn();
   show("scr-quiz");
   nextQuestion();
 }
 
 function nextQuestion() {
   const q = quiz;
-  if (q.idx >= q.order.length) { // 一周クリア → シャッフルして次の周へ
+  hideNextBtn();
+  if (q.nigate) {
+    if (q.idx >= q.order.length) return endNigate();
+  } else if (q.idx >= q.order.length) { // 一周クリア → シャッフルして次の周へ
     q.order = shuffle(q.pool);
     q.idx = 0;
     q.lap++;
@@ -1799,13 +1974,15 @@ function nextQuestion() {
   document.getElementById("q-word").className = "q-word" + (isE2J ? "" : " jp");
   document.getElementById("q-reading").textContent = "";
   document.getElementById("streak-num").textContent = q.streak;
-  document.getElementById("lap-note").textContent =
-    q.lap > 1 ? `⭐ 全${q.pool.length}語を${q.lap - 1}周クリア中!` : `全${q.pool.length}語 / のこり${q.order.length - q.idx}語`;
+  document.getElementById("lap-note").textContent = q.nigate
+    ? `にがて単語 のこり${q.order.length - q.idx}語`
+    : q.lap > 1 ? `⭐ 全${q.pool.length}語を${q.lap - 1}周クリア中!` : `全${q.pool.length}語 / のこり${q.order.length - q.idx}語`;
 
   // 4択生成: 正解 + まちがい3つ（同じ意味・同じ単語は除外）
   const ansText = isE2J ? word[2] : word[0];
+  const src = q.distPool || q.pool;
   const wrongs = [];
-  const cand = shuffle(q.pool.filter(w => w !== word && (isE2J ? w[2] : w[0]) !== ansText));
+  const cand = shuffle(src.filter(w => w !== word && (isE2J ? w[2] : w[0]) !== ansText));
   for (const w of cand) {
     const t = isE2J ? w[2] : w[0];
     if (!wrongs.includes(t)) wrongs.push(t);
@@ -1834,18 +2011,52 @@ function answer(btn, ok, ansText) {
   btns.forEach(b => { if (b.textContent === ansText) b.classList.add("correct"); else b.classList.add("dim"); });
 
   if (ok) {
+    nigateRemove(q.current); // 正解したらにがてストックから消す
     q.streak++;
     q.idx++;
     document.getElementById("streak-num").textContent = q.streak;
-    setTimeout(nextQuestion, 550);
+    if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); nextQuestion(); } }, 700);
+    else showNextBtn("次の問題 →", nextQuestion);
   } else {
+    nigateAdd(q.current); // まちがえたらにがてストックへ
     btn.classList.remove("dim");
     btn.classList.add("wrong");
-    setTimeout(() => endQuiz(false), 1100);
+    if (q.nigate) { // 克服モードはまちがえても続行
+      q.ngCount++;
+      q.idx++;
+      if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); nextQuestion(); } }, 1400);
+      else showNextBtn("次の問題 →", nextQuestion);
+    } else {
+      if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); endQuiz(false); } }, 1400);
+      else showNextBtn("結果を見る →", () => endQuiz(false));
+    }
   }
 }
 
-function quitQuiz() { endQuiz(true); }
+function quitQuiz() {
+  hideNextBtn();
+  if (quiz && quiz.nigate) endNigate();
+  else endQuiz(true);
+}
+
+function retryQuiz() {
+  if (quiz && quiz.nigate) {
+    if (Object.keys(loadNigate()).length > 0) startNigate(); else goHome();
+  } else startQuiz();
+}
+
+function endNigate() {
+  const q = quiz;
+  const remain = Object.keys(loadNigate()).length;
+  document.getElementById("result-score").textContent = q.streak;
+  document.getElementById("result-unit").textContent = " 語 克服";
+  document.getElementById("result-emoji").textContent = remain === 0 ? "👑" : q.streak > 0 ? "💪" : "😢";
+  document.getElementById("result-msg").textContent =
+    remain === 0 ? "にがて単語ぜんぶ克服! すごい!" : `にがて単語 のこり${remain}語`;
+  document.getElementById("result-record").innerHTML = "";
+  document.getElementById("miss-box").style.display = "none";
+  show("scr-result");
+}
 
 function endQuiz(quit) {
   const q = quiz;
@@ -1860,6 +2071,7 @@ function endQuiz(quit) {
   }
 
   document.getElementById("result-score").textContent = q.streak;
+  document.getElementById("result-unit").textContent = " 連続正解";
   const total = q.pool.length;
   const emoji = q.streak >= total ? "👑" : q.streak >= total * 0.7 ? "🥳" : q.streak >= 10 ? "😊" : "😢";
   document.getElementById("result-emoji").textContent = emoji;
@@ -1885,12 +2097,22 @@ function endQuiz(quit) {
 // ================= 単語帳 =================
 let hideMeaning = false;
 let bookLimit = 100;
+let bookNigate = false; // にがて単語一覧モード
 
 function openBook() {
   if (selected.size === 0) {
     document.getElementById("home-warn").textContent = "出題範囲を1つ以上えらんでね!";
     return;
   }
+  bookNigate = false;
+  document.getElementById("search").value = "";
+  bookLimit = 100;
+  renderBook();
+  show("scr-book");
+}
+
+function openNigateBook() {
+  bookNigate = true;
   document.getElementById("search").value = "";
   bookLimit = 100;
   renderBook();
@@ -1905,21 +2127,25 @@ function toggleMeaning() {
 }
 
 function renderBook() {
-  const kw = document.getElementById("search").value.trim().toLowerCase();
-  const ids = [...selected].sort();
+  const kw = kanaFold(document.getElementById("search").value.trim());
   let rows = [];
-  ids.forEach(id => {
-    if (!DATA[id]) return;
-    DATA[id].words.forEach(w => rows.push({ w, tag: SHORT_LABEL[id] || id }));
-  });
+  if (bookNigate) {
+    Object.values(loadNigate()).forEach(w => rows.push({ w, tag: "にがて" }));
+  } else {
+    [...selected].sort().forEach(id => {
+      if (!DATA[id]) return;
+      DATA[id].words.forEach(w => rows.push({ w, tag: SHORT_LABEL[id] || id }));
+    });
+  }
   if (kw) {
+    // ひらがな/カタカナの違いを無視して 単語・読み・意味 から検索
     rows = rows.filter(r =>
-      r.w[0].toLowerCase().includes(kw) || r.w[1].includes(kw) || r.w[2].includes(kw));
+      kanaFold(r.w[0]).includes(kw) || kanaFold(r.w[1]).includes(kw) || kanaFold(r.w[2]).includes(kw));
     // 完全一致 → 前方一致 → 部分一致の順に表示
     const rank = r => {
-      const en = r.w[0].toLowerCase();
-      if (en === kw || r.w[2] === kw) return 0;
-      if (en.startsWith(kw) || r.w[2].startsWith(kw)) return 1;
+      const en = kanaFold(r.w[0]), rd = kanaFold(r.w[1]), mn = kanaFold(r.w[2]);
+      if (en === kw || rd === kw || mn === kw) return 0;
+      if (en.startsWith(kw) || rd.startsWith(kw) || mn.startsWith(kw)) return 1;
       return 2;
     };
     rows.sort((a, b) => rank(a) - rank(b));
@@ -1950,6 +2176,7 @@ window.addEventListener("beforeunload", () => {
 });
 renderRanges();
 renderRecords();
+renderNigate();
 </script>
 </body>
 </html>

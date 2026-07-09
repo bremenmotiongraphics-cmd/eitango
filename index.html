@@ -111,6 +111,14 @@
   #next-btn:active { transform: scale(.98); }
   .nigate-row { display: flex; gap: 8px; margin-top: 8px; }
   .nigate-note { font-size: 12px; color: #9c93b8; }
+  .resume-btn {
+    width: 100%; margin-bottom: 14px; padding: 14px; border: none; border-radius: 16px;
+    background: linear-gradient(135deg, #34c77b, #2aa5a0); color: #fff;
+    font-size: 15px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(52, 199, 123, .3); text-align: center;
+  }
+  .resume-btn small { display: block; font-size: 11px; font-weight: 400; opacity: .95; margin-top: 3px; }
+  .resume-btn:active { transform: scale(.98); }
 
   /* ===== 結果画面 ===== */
   .result-card { text-align: center; padding: 30px 16px; }
@@ -184,6 +192,8 @@
         <button class="dir-btn" id="dir-j2e" onclick="setDir('j2e')">意味 → 英語</button>
       </div>
     </div>
+
+    <div id="resume-area"></div>
 
     <div class="main-btns">
       <button class="big-btn btn-quiz" onclick="startQuiz()">🔥 クイズ<small>エンドレスモード</small></button>
@@ -1783,6 +1793,54 @@ function kanaFold(s) {
   return String(s).toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
 }
 
+// ===== 続きから（進行状況の自動保存） =====
+const RS_KEY = "eitango_resume_v1";
+function saveResume() {
+  const q = quiz;
+  if (!q || q.nigate) return;
+  localStorage.setItem(RS_KEY, JSON.stringify({
+    key: q.key, dir: q.dir, idx: q.idx, streak: q.streak, lap: q.lap,
+    order: q.order.map(nKey)
+  }));
+}
+function clearResume() { localStorage.removeItem(RS_KEY); }
+function loadResume() { try { return JSON.parse(localStorage.getItem(RS_KEY)); } catch (e) { return null; } }
+
+function resumeQuiz() {
+  const s = loadResume();
+  if (!s) return;
+  const pool = poolOf(s.key.split("+"));
+  const map = {};
+  pool.forEach(w => { map[nKey(w)] = w; });
+  const order = s.order.map(k => map[k]).filter(Boolean); // データ更新で消えた単語は除外
+  if (pool.length === 0 || order.length === 0) { clearResume(); goHome(); return; }
+  quiz = {
+    pool: pool,
+    order: order,
+    idx: Math.min(s.idx, order.length),
+    streak: s.streak,
+    lap: s.lap || 1,
+    key: s.key,
+    dir: s.dir,
+    lock: false,
+  };
+  document.getElementById("streak-label").textContent = "連続正解";
+  updateAutoBtn();
+  show("scr-quiz");
+  nextQuestion();
+}
+
+function renderResume() {
+  const area = document.getElementById("resume-area");
+  const s = loadResume();
+  if (!s || s.streak === 0) { area.innerHTML = ""; return; }
+  const remain = Math.max(0, s.order.length - s.idx);
+  area.innerHTML = `
+    <button class="resume-btn" onclick="resumeQuiz()">▶ 続きから
+      <small>${comboLabel(s.key)} ／ ${s.dir === "e2j" ? "英→日" : "日→英"} ／ ${s.streak}連続正解中・のこり${remain}語</small>
+    </button>`;
+}
+
 // ================= ホーム描画 =================
 function renderRanges() {
   const area = document.getElementById("range-area");
@@ -1861,7 +1919,7 @@ function show(id) {
   document.getElementById(id).classList.add("active");
   window.scrollTo(0, 0);
 }
-function goHome() { bookNigate = false; renderRanges(); renderRecords(); renderNigate(); show("scr-home"); }
+function goHome() { bookNigate = false; renderRanges(); renderRecords(); renderNigate(); renderResume(); show("scr-home"); }
 
 function renderNigate() {
   const list = Object.values(loadNigate());
@@ -2014,6 +2072,7 @@ function answer(btn, ok, ansText) {
     nigateRemove(q.current); // 正解したらにがてストックから消す
     q.streak++;
     q.idx++;
+    saveResume(); // 続きから用に自動保存
     document.getElementById("streak-num").textContent = q.streak;
     if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); nextQuestion(); } }, 700);
     else showNextBtn("次の問題 →", nextQuestion);
@@ -2027,6 +2086,7 @@ function answer(btn, ok, ansText) {
       if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); nextQuestion(); } }, 1400);
       else showNextBtn("次の問題 →", nextQuestion);
     } else {
+      clearResume(); // 不正解でラン終了 → 続きからは消す
       if (autoMode) setTimeout(() => { if (q === quiz && q.lock) { hideNextBtn(); endQuiz(false); } }, 1400);
       else showNextBtn("結果を見る →", () => endQuiz(false));
     }
@@ -2177,6 +2237,7 @@ window.addEventListener("beforeunload", () => {
 renderRanges();
 renderRecords();
 renderNigate();
+renderResume();
 </script>
 </body>
 </html>
